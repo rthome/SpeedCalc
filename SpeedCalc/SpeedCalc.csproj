@@ -111,6 +111,10 @@
       <Project>{b32b7fe0-9637-480b-8fbc-7c33e7dd1392}</Project>
       <Name>SpeedCalc.Language</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SpeedCalc.Numeric\SpeedCalc.Numeric.csproj">
+      <Project>{63374bc5-3210-4d85-ab1a-1597e7b6106b}</Project>
+      <Name>SpeedCalc.Numeric</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

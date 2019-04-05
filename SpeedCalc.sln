@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeedCalc", "SpeedCalc\Spee
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeedCalc.Language", "SpeedCalc.Language\SpeedCalc.Language.csproj", "{B32B7FE0-9637-480B-8FBC-7C33E7DD1392}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeedCalc.Numeric", "SpeedCalc.Numeric\SpeedCalc.Numeric.csproj", "{63374BC5-3210-4D85-AB1A-1597E7B6106B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B32B7FE0-9637-480B-8FBC-7C33E7DD1392}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B32B7FE0-9637-480B-8FBC-7C33E7DD1392}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B32B7FE0-9637-480B-8FBC-7C33E7DD1392}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63374BC5-3210-4D85-AB1A-1597E7B6106B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63374BC5-3210-4D85-AB1A-1597E7B6106B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63374BC5-3210-4D85-AB1A-1597E7B6106B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63374BC5-3210-4D85-AB1A-1597E7B6106B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
