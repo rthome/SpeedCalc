@@ -22,8 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpeedCalc.Language\SpeedCalc.Language.csproj" />
-    <ProjectReference Include="..\SpeedCalc.Numeric\SpeedCalc.Numeric.csproj" />
+    <ProjectReference Include="..\SpeedCalc.Language\SpeedCalc.Core.csproj" />
   </ItemGroup>
 
 </Project>

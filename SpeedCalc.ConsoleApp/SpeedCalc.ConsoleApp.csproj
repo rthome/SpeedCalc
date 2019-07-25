@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -15,15 +15,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpeedCalc.Language\SpeedCalc.Language.csproj" />
-    <ProjectReference Include="..\SpeedCalc.Numeric\SpeedCalc.Numeric.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpeedCalc.Language\SpeedCalc.Core.csproj" />
   </ItemGroup>
 
 </Project>
