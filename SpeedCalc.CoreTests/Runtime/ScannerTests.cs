@@ -6,11 +6,27 @@ using SpeedCalc.Core.Runtime;
 
 using Xunit;
 
+using static SpeedCalc.Core.Runtime.TokenType;
+
 namespace SpeedCalc.CoreTests.Runtime
 {
     public class ScannerTests
     {
         public static IEnumerable<object[]> Digits => Enumerable.Range(0, 9).Select(i => new object[] { i.ToString(CultureInfo.InvariantCulture) });
+
+        public static IEnumerable<object[]> ScanSamples
+        {
+            get
+            {
+                yield return new object[] { "1+1", new[] { (Number, "1"), (Plus, "+"), (Number, "1") } };
+                yield return new object[] { "f(x) = x**2",
+                    new[] { (Identifier, "f"), (ParenLeft, "("), (Identifier, "x"), (ParenRight, ")"), (Equal, "="), (Identifier, "x"), (StarStar, "**"), (Number, "2") } };
+                yield return new object[] { "sin(alpha) = cos(deg(90) - alpha)",
+                    new[] { (Identifier, "sin"), (ParenLeft, "("), (Identifier, "alpha"), (ParenRight, ")"), (Equal, "="),
+                        (Identifier, "cos"), (ParenLeft, "("), (Identifier, "deg"), (ParenLeft, "("), (Number, "90"), (ParenRight, ")"), (Minus, "-"), (Identifier, "alpha"), (ParenRight, ")"), } };
+                yield return new object[] { "{ return 1 }", new[] { (BraceLeft, "{"), (Return, "return"), (Number, "1"), (BraceRight, "}") } };
+            }
+        }
 
         void ScanSingleToken(string lexeme, TokenType expectedType)
         {
@@ -40,44 +56,44 @@ namespace SpeedCalc.CoreTests.Runtime
         [Fact]
         public void Eof()
         {
-            ScanSingleToken(string.Empty, TokenType.EOF);
+            ScanSingleToken(string.Empty, EOF);
         }
 
         [Theory]
-        [InlineData("{", TokenType.BraceLeft)]
-        [InlineData("}", TokenType.BraceRight)]
-        [InlineData(",", TokenType.Comma)]
-        [InlineData(".", TokenType.Dot)]
-        [InlineData("(", TokenType.ParenLeft)]
-        [InlineData(")", TokenType.ParenRight)]
-        [InlineData("+", TokenType.Plus)]
-        [InlineData("/", TokenType.Slash)]
-        [InlineData("!", TokenType.Bang)]
-        [InlineData("!=", TokenType.BangEqual)]
-        [InlineData("=", TokenType.Equal)]
-        [InlineData("==", TokenType.EqualEqual)]
-        [InlineData(">", TokenType.Greater)]
-        [InlineData(">=", TokenType.GreaterEqual)]
-        [InlineData("<", TokenType.Less)]
-        [InlineData("<=", TokenType.LessEqual)]
-        [InlineData("*", TokenType.Star)]
-        [InlineData("**", TokenType.StarStar)]
+        [InlineData("{", BraceLeft)]
+        [InlineData("}", BraceRight)]
+        [InlineData(",", Comma)]
+        [InlineData(".", Dot)]
+        [InlineData("(", ParenLeft)]
+        [InlineData(")", ParenRight)]
+        [InlineData("+", Plus)]
+        [InlineData("/", Slash)]
+        [InlineData("!", Bang)]
+        [InlineData("!=", BangEqual)]
+        [InlineData("=", Equal)]
+        [InlineData("==", EqualEqual)]
+        [InlineData(">", Greater)]
+        [InlineData(">=", GreaterEqual)]
+        [InlineData("<", Less)]
+        [InlineData("<=", LessEqual)]
+        [InlineData("*", Star)]
+        [InlineData("**", StarStar)]
         public void SimpleTokens(string lexeme, TokenType expectedType)
         {
             ScanSingleToken(lexeme, expectedType);
         }
 
         [Theory]
-        [InlineData("and", TokenType.And)]
-        [InlineData("else", TokenType.Else)]
-        [InlineData("false", TokenType.False)]
-        [InlineData("for", TokenType.For)]
-        [InlineData("if", TokenType.If)]
-        [InlineData("or", TokenType.Or)]
-        [InlineData("return", TokenType.Return)]
-        [InlineData("true", TokenType.True)]
-        [InlineData("var", TokenType.Var)]
-        [InlineData("while", TokenType.While)]
+        [InlineData("and", And)]
+        [InlineData("else", Else)]
+        [InlineData("false", False)]
+        [InlineData("for", For)]
+        [InlineData("if", If)]
+        [InlineData("or", Or)]
+        [InlineData("return", Return)]
+        [InlineData("true", True)]
+        [InlineData("var", Var)]
+        [InlineData("while", While)]
         public void KeywordTokens(string lexeme, TokenType expectedType)
         {
             ScanSingleToken(lexeme, expectedType);
@@ -94,7 +110,7 @@ namespace SpeedCalc.CoreTests.Runtime
         [InlineData("asd123098lkj")]
         public void IdentifierTokens(string lexeme)
         {
-            ScanSingleToken(lexeme, TokenType.Identifier);
+            ScanSingleToken(lexeme, Identifier);
         }
 
         [Theory]
@@ -114,7 +130,22 @@ namespace SpeedCalc.CoreTests.Runtime
         [InlineData(".83749218374982734")]
         public void NumberTokens(string lexeme)
         {
-            ScanSingleToken(lexeme, TokenType.Number);
+            ScanSingleToken(lexeme, Number);
+        }
+
+        [Theory]
+        [MemberData(nameof(ScanSamples))]
+        public void LongScans(string source, (TokenType type, string lexeme)[] expectedTokens)
+        {
+            var scanner = new Scanner(source);
+            for (int i = 0; i < expectedTokens.Length; i++)
+            {
+                var token = scanner.ScanToken();
+                Assert.Equal(expectedTokens[i].type, token.Type);
+                Assert.Equal(expectedTokens[i].lexeme, token.Lexeme);
+            }
+
+            Assert.Equal(EOF, scanner.ScanToken().Type);
         }
     }
 }
