@@ -1,6 +1,4 @@
-﻿using ReactiveUI;
-using SpeedCalc.Frontend.ViewModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,20 +10,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace SpeedCalc.Frontend.Views
+namespace SpeedCalc
 {
-    public partial class ShellView : ReactiveWindow<ShellViewModel>
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        public ShellView(ShellViewModel shellViewModel)
+        public MainWindow()
         {
             InitializeComponent();
-            ViewModel = shellViewModel;
-            this.WhenActivated(disposables =>
-            {
-
-            });
         }
     }
 }
