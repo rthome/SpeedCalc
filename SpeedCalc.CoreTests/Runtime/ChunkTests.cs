@@ -57,5 +57,13 @@ namespace SpeedCalc.CoreTests.Runtime
             Assert.True(chunk.Constants[0].EqualsValue(Values.Nil()));
             Assert.True(chunk.Constants[1].EqualsValue(Values.Bool(true)));
         }
+
+        [Fact]
+        public void ChunkReturnsConstantIndices()
+        {
+            var chunk = new Chunk();
+            Assert.Equal(0, chunk.AddConstant(Values.Nil()));
+            Assert.Equal(1, chunk.AddConstant(Values.Number(0m)));
+        }
     }
 }
