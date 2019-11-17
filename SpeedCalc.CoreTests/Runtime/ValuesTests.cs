@@ -44,6 +44,15 @@ namespace SpeedCalc.CoreTests.Runtime
         }
 
         [Fact]
+        public void ValueTypesRejectNull()
+        {
+            Assert.False(Values.IsNil(null));
+            Assert.False(Values.IsBool(null));
+            Assert.False(Values.IsNumber(null));
+            Assert.False(Values.IsFunction(null));
+        }
+
+        [Fact]
         public void ValuesRetainTheValueTheyAreGiven()
         {
             Assert.True(Values.Bool(true).AsBool());
