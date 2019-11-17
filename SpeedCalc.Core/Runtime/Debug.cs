@@ -19,7 +19,7 @@ namespace SpeedCalc.Core.Runtime
             {
                 case OpCode.Constant:
                     var constant = chunk.Code[offset + 1];
-                    sb.Append($"{instr.ToString()} {constant,4:D4} {Values.ToString(chunk.Constants[constant])}");
+                    sb.Append($"{instr.ToString()} {constant,4:D4} {chunk.Constants[constant]}");
                     return (offset + 2, sb.ToString());
 
                 case OpCode.Nil:

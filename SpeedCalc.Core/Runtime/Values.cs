@@ -3,29 +3,32 @@ using System.Globalization;
 
 namespace SpeedCalc.Core.Runtime
 {
-    public interface IValue { }
+    public abstract class Value
+    {
+        public override sealed string ToString() => Values.ToString(this);
+    }
 
     public static class Values
     {
         #region Value Subtypes
 
-        sealed class NilVal : IValue { }
+        sealed class NilVal : Value { }
 
-        sealed class BoolVal : IValue
+        sealed class BoolVal : Value
         {
             public bool Value { get; }
 
             public BoolVal(bool value) => Value = value;
         }
 
-        sealed class NumberVal : IValue
+        sealed class NumberVal : Value
         {
             public decimal Value { get; }
 
             public NumberVal(decimal value) => Value = value;
         }
 
-        sealed class FunctionVal : IValue
+        sealed class FunctionVal : Value
         {
             public object Value { get; }
 
@@ -34,27 +37,27 @@ namespace SpeedCalc.Core.Runtime
 
         #endregion
 
-        static readonly IValue NilInstance = new NilVal();
-        static readonly IValue TrueInstance = new BoolVal(true);
-        static readonly IValue FalseInstance = new BoolVal(false);
+        static readonly Value NilInstance = new NilVal();
+        static readonly Value TrueInstance = new BoolVal(true);
+        static readonly Value FalseInstance = new BoolVal(false);
 
-        public static IValue Nil() => NilInstance;
+        public static Value Nil() => NilInstance;
 
-        public static IValue Bool(bool value) => value ? TrueInstance : FalseInstance;
+        public static Value Bool(bool value) => value ? TrueInstance : FalseInstance;
 
-        public static IValue Number(decimal value) => new NumberVal(value);
+        public static Value Number(decimal value) => new NumberVal(value);
 
-        public static IValue Function(object value) => new FunctionVal(value);
+        public static Value Function(object value) => new FunctionVal(value);
 
-        public static bool IsNil(this IValue value) => value is NilVal;
+        public static bool IsNil(this Value value) => value is NilVal;
 
-        public static bool IsBool(this IValue value) => value is BoolVal;
+        public static bool IsBool(this Value value) => value is BoolVal;
 
-        public static bool IsNumber(this IValue value) => value is NumberVal;
+        public static bool IsNumber(this Value value) => value is NumberVal;
 
-        public static bool IsFunction(this IValue value) => value is FunctionVal;
+        public static bool IsFunction(this Value value) => value is FunctionVal;
 
-        public static bool AsBool(this IValue value)
+        public static bool AsBool(this Value value)
         {
             if (value is BoolVal val)
                 return val.Value;
@@ -62,7 +65,7 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a bool value.");
         }
 
-        public static decimal AsNumber(this IValue value)
+        public static decimal AsNumber(this Value value)
         {
             if (value is NumberVal val)
                 return val.Value;
@@ -70,7 +73,7 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a number value.");
         }
 
-        public static object AsFunction(this IValue value)
+        public static object AsFunction(this Value value)
         {
             if (value is FunctionVal val)
                 return val.Value;
@@ -78,12 +81,12 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a function value.");
         }
 
-        public static bool EqualsValue(this IValue firstValue, IValue secondValue)
+        public static bool EqualsValue(this Value firstValue, Value secondValue)
         {
             if (firstValue.GetType() != secondValue.GetType())
                 return false;
 
-            switch(firstValue)
+            switch (firstValue)
             {
                 case NilVal _:
                     return true;
@@ -98,7 +101,7 @@ namespace SpeedCalc.Core.Runtime
             throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'");
         }
 
-        public static string ToString(IValue value)
+        public static string ToString(this Value value)
         {
             if (value is null)
                 throw new ArgumentNullException(nameof(value));

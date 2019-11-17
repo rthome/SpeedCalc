@@ -28,15 +28,7 @@
 
         bool IsAlpha(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 
-        Token MakeToken(TokenType type)
-        {
-            return new Token
-            {
-                Type = type,
-                Lexeme = source.Substring(start, current - start),
-                Line = line,
-            };
-        }
+        Token MakeToken(TokenType type) => new Token(type, source[start..current], line);
 
         void Whitespace()
         {
@@ -171,9 +163,9 @@
                     return MakeToken(Match('=') ? TokenType.GreaterEqual : TokenType.Greater);
             }
 
-            return new Token { Type = TokenType.Error, Lexeme = "Unexpected character", Line = line };
+            return new Token(TokenType.Error, "Unexpected character", line);
         }
 
-        public Scanner(string source) => this.source = source;
+        public Scanner(string source) => this.source = source ?? throw new System.ArgumentNullException(nameof(source));
     }
 }

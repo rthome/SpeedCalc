@@ -26,7 +26,7 @@ namespace SpeedCalc.Core.Runtime
 
         public RuntimeArray<int> Lines { get; } = new RuntimeArray<int>();
 
-        public RuntimeArray<IValue> Constants { get; } = new RuntimeArray<IValue>();
+        public RuntimeArray<Value> Constants { get; } = new RuntimeArray<Value>();
 
         public void Write(OpCode opcode, int line) => Write((byte)opcode, line);
 
@@ -44,7 +44,7 @@ namespace SpeedCalc.Core.Runtime
             Lines.Write(line);
         }
 
-        public int AddConstant(IValue constantValue)
+        public int AddConstant(Value constantValue)
         {
             if (constantValue is null)
                 throw new ArgumentNullException(nameof(constantValue));
