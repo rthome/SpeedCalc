@@ -40,6 +40,17 @@ namespace SpeedCalc.CoreTests.Runtime
         }
 
         [Fact]
+        public void ChunkWritesOpcodeAndArg()
+        {
+            var chunk = new Chunk();
+            chunk.Write(OpCode.Constant, 0, 1);
+            chunk.Write(OpCode.Return, 10, 2);
+
+            Assert.Equal(new byte[] { (byte)OpCode.Constant, 0, (byte)OpCode.Return, 10 }, chunk.Code);
+            Assert.Equal(new[] { 1, 1, 2, 2 }, chunk.Lines);
+        }
+
+        [Fact]
         public void ChunkChecksForNullConstants()
         {
             var chunk = new Chunk();

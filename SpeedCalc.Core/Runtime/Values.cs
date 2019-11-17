@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace SpeedCalc.Core.Runtime
 {
@@ -94,7 +95,27 @@ namespace SpeedCalc.Core.Runtime
                     return firstValue.AsFunction() == secondValue.AsFunction();
             }
 
-            throw new RuntimeException($"Unknown value types received: '{firstValue}' and {secondValue}'");
+            throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'");
+        }
+
+        public static string ToString(IValue value)
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            switch (value)
+            {
+                case NilVal _:
+                    return "nil";
+                case BoolVal _:
+                    return value.AsBool() ? "true" : "false";
+                case NumberVal _:
+                    return value.AsNumber().ToString("G", CultureInfo.InvariantCulture);
+                case FunctionVal _:
+                    return "function";
+            }
+
+            throw new RuntimeException($"Unknown value type received: '{value.GetType()}'");
         }
     }
 }

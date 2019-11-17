@@ -36,6 +36,14 @@ namespace SpeedCalc.Core.Runtime
             Lines.Write(line);
         }
 
+        public void Write(OpCode opcode, byte arg, int line)
+        {
+            Code.Write((byte)opcode);
+            Lines.Write(line);
+            Code.Write(arg);
+            Lines.Write(line);
+        }
+
         public int AddConstant(IValue constantValue)
         {
             if (constantValue is null)
