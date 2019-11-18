@@ -4,6 +4,7 @@ namespace SpeedCalc.Core.Runtime
 {
     public enum OpCode : byte
     {
+        Nop,
         Constant,
         Nil,
         True,

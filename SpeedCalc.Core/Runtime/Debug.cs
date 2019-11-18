@@ -22,6 +22,7 @@ namespace SpeedCalc.Core.Runtime
                     sb.Append($"{instr.ToString()} {constant,4:D4} {chunk.Constants[constant]}");
                     return (offset + 2, sb.ToString());
 
+                case OpCode.Nop:
                 case OpCode.Nil:
                 case OpCode.True:
                 case OpCode.False:
