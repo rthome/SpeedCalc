@@ -63,6 +63,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             var vm = new VirtualMachine();
             var chunk = new Chunk();
+
             var constValue = Values.Bool(true);
             var constIndex = chunk.AddConstant(constValue);
             chunk.Write(OpCode.Constant, (byte)constIndex, 1);
@@ -82,12 +83,32 @@ namespace SpeedCalc.Tests.Core.Runtime
             chunk.Write(OpCode.True, 1);
             chunk.Write(OpCode.False, 1);
             chunk.Write(OpCode.True, 1);
+            chunk.Write(OpCode.Return, 1);
 
             vm.Interpret(chunk);
 
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
             Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+        }
+
+        [Fact]
+        public void MachineEquatesValues()
+        {
+            var vm = new VirtualMachine();
+            var chunk = new Chunk();
+
+            chunk.Write(OpCode.False, 1);
+            chunk.Write(OpCode.True, 1);
+            chunk.Write(OpCode.False, 1);
+            chunk.Write(OpCode.Equal, 1);
+            chunk.Write(OpCode.Equal, 1);
+            chunk.Write(OpCode.Return, 1);
+
+            vm.Interpret(chunk);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.ThrowsAny<RuntimeExecutionException>(() => vm.Pop());
         }
 
         [Fact]

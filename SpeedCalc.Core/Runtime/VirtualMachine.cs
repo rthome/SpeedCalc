@@ -38,6 +38,12 @@ namespace SpeedCalc.Core.Runtime
                         Push(Values.Bool(false));
                         break;
                     case OpCode.Equal:
+                        {
+                            var a = Pop();
+                            var b = Pop();
+                            var equals = a.EqualsValue(b);
+                            Push(Values.Bool(equals));
+                        }
                         break;
                     case OpCode.Greater:
                         break;
