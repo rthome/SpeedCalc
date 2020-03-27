@@ -5,11 +5,11 @@ VisualStudioVersion = 16.0.28729.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedCalc.Core", "SpeedCalc.Core\SpeedCalc.Core.csproj", "{B32B7FE0-9637-480B-8FBC-7C33E7DD1392}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedCalc.CoreTests", "SpeedCalc.CoreTests\SpeedCalc.CoreTests.csproj", "{0B577D23-78E3-4940-9075-8B770CA2DB42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedCalc.Tests", "SpeedCalc.Tests\SpeedCalc.Tests.csproj", "{0B577D23-78E3-4940-9075-8B770CA2DB42}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedCalc.ConsoleApp", "SpeedCalc.ConsoleApp\SpeedCalc.ConsoleApp.csproj", "{1AE0ECF2-963C-4973-B84B-AA72B65412B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeedCalc", "SpeedCalc\SpeedCalc.csproj", "{FE0C85B4-D3F8-42FB-83D1-DB9EBD036F32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedCalc", "SpeedCalc\SpeedCalc.csproj", "{FE0C85B4-D3F8-42FB-83D1-DB9EBD036F32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

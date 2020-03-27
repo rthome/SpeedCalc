@@ -8,7 +8,7 @@ using Xunit;
 
 using static SpeedCalc.Core.Runtime.TokenType;
 
-namespace SpeedCalc.CoreTests.Runtime
+namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScannerTests
     {

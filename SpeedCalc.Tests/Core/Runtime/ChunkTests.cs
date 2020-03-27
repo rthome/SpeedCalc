@@ -4,7 +4,7 @@ using System;
 
 using Xunit;
 
-namespace SpeedCalc.CoreTests.Runtime
+namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ChunkTests
     {

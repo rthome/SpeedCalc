@@ -32,8 +32,10 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Nil:
                         break;
                     case OpCode.True:
+                        Push(Values.Bool(true));
                         break;
                     case OpCode.False:
+                        Push(Values.Bool(false));
                         break;
                     case OpCode.Equal:
                         break;

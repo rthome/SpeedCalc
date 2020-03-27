@@ -4,7 +4,7 @@ using System;
 
 using Xunit;
 
-namespace SpeedCalc.CoreTests.Runtime
+namespace SpeedCalc.Tests.Core.Runtime
 {
     public class VirtualMachineTests
     {
@@ -71,6 +71,23 @@ namespace SpeedCalc.CoreTests.Runtime
             vm.Interpret(chunk);
 
             Assert.True(vm.Pop().Equals(constValue));
+        }
+
+        [Fact]
+        public void MachinePushesBools()
+        {
+            var vm = new VirtualMachine();
+            var chunk = new Chunk();
+
+            chunk.Write(OpCode.True, 1);
+            chunk.Write(OpCode.False, 1);
+            chunk.Write(OpCode.True, 1);
+
+            vm.Interpret(chunk);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
         }
 
         [Fact]
