@@ -83,6 +83,11 @@ namespace SpeedCalc.Core.Runtime
                         }
                         break;
                     case OpCode.Negate:
+                        {
+                            if (!Peek(0).IsNumber())
+                                throw new RuntimeExecutionException("Operand must be a number");
+                            Push(Values.Number(-Pop().AsNumber()));
+                        }
                         break;
                     case OpCode.Return:
                         return;

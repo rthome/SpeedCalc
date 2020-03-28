@@ -228,6 +228,27 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void MachineNegatesNumbers()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Number(1));
+
+            RunChunkWith(vm, OpCode.Negate);
+            Assert.True(vm.Peek().EqualsValue(Values.Number(-1)));
+
+            RunChunkWith(vm, OpCode.Negate);
+            Assert.True(vm.Pop().EqualsValue(Values.Number(1)));
+        }
+
+        [Fact]
+        public void MachineChecksTypeForNegate()
+        {
+            var vm = new VirtualMachine();
+            Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Negate));
+            Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.Negate));
+        }
+
+        [Fact]
         public void MachinePreservesStackAcrossInterpretCalls()
         {
             var vm = new VirtualMachine();
