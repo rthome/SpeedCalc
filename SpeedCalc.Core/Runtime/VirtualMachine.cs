@@ -4,7 +4,9 @@ namespace SpeedCalc.Core.Runtime
 {
     public sealed class VirtualMachine
     {
-        readonly RuntimeArray<Value> stack;
+        const int MaxStackSize = 256;
+
+        readonly Value[] stack;
         Chunk executingChunk;
         int ipOffset;
         int stackTopOffset;
@@ -140,7 +142,7 @@ namespace SpeedCalc.Core.Runtime
 
         public VirtualMachine()
         {
-            stack = new RuntimeArray<Value>();
+            stack = new Value[MaxStackSize];
         }
     }
 }
