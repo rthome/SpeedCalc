@@ -16,6 +16,8 @@ namespace SpeedCalc.Core.Runtime
             byte ReadByte() => executingChunk.Code[ipOffset++];
             Value ReadConstant() => executingChunk.Constants[ReadByte()];
 
+            static bool IsFalsey(Value value) => value.IsNil() || (value.IsBool() && !value.AsBool());
+
             while (true)
             {
                 var instruction = (OpCode)ReadByte();
@@ -30,6 +32,7 @@ namespace SpeedCalc.Core.Runtime
                         }
                         break;
                     case OpCode.Nil:
+                        Push(Values.Nil());
                         break;
                     case OpCode.True:
                         Push(Values.Bool(true));
@@ -58,6 +61,10 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Divide:
                         break;
                     case OpCode.Not:
+                        {
+                            var falsey = IsFalsey(Pop());
+                            Push(Values.Bool(falsey));
+                        }
                         break;
                     case OpCode.Negate:
                         break;

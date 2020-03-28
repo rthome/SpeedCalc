@@ -8,6 +8,15 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class VirtualMachineTests
     {
+        static void RunChunkWith(VirtualMachine vm, params OpCode[] opcodes)
+        {
+            var chunk = new Chunk();
+            foreach (var op in opcodes)
+                chunk.Write(op, 1);
+            chunk.Write(OpCode.Return, 2);
+            vm.Interpret(chunk);
+        }
+
         [Fact]
         public void PopFromEmptyStackThrows()
         {
@@ -75,18 +84,12 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void MachinePushesBools()
+        public void MachinePushesPrimitiveValues()
         {
             var vm = new VirtualMachine();
-            var chunk = new Chunk();
+            RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.True, OpCode.Nil);
 
-            chunk.Write(OpCode.True, 1);
-            chunk.Write(OpCode.False, 1);
-            chunk.Write(OpCode.True, 1);
-            chunk.Write(OpCode.Return, 1);
-
-            vm.Interpret(chunk);
-
+            Assert.True(vm.Pop().IsNil());
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
             Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
@@ -96,19 +99,25 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineEquatesValues()
         {
             var vm = new VirtualMachine();
-            var chunk = new Chunk();
-
-            chunk.Write(OpCode.False, 1);
-            chunk.Write(OpCode.True, 1);
-            chunk.Write(OpCode.False, 1);
-            chunk.Write(OpCode.Equal, 1);
-            chunk.Write(OpCode.Equal, 1);
-            chunk.Write(OpCode.Return, 1);
-
-            vm.Interpret(chunk);
+            RunChunkWith(vm, OpCode.False, OpCode.True, OpCode.False, OpCode.Equal, OpCode.Equal);
 
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
             Assert.ThrowsAny<RuntimeExecutionException>(() => vm.Pop());
+        }
+
+        [Fact]
+        public void MachineNotsValues()
+        {
+            var vm = new VirtualMachine();
+
+            RunChunkWith(vm, OpCode.Nil, OpCode.Not);
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+
+            RunChunkWith(vm, OpCode.False, OpCode.Not);
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+
+            RunChunkWith(vm, OpCode.True, OpCode.Not);
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
         }
 
         [Fact]
