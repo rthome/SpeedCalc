@@ -6,13 +6,13 @@
         EOF,
 
         // Single-character
+        ParenLeft,
+        ParenRight,
         BraceLeft,
         BraceRight,
         Comma,
         Dot,
         Minus,
-        ParenLeft,
-        ParenRight,
         Plus,
         Slash,
 

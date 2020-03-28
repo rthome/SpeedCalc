@@ -8,27 +8,26 @@ namespace SpeedCalc.ConsoleApp
     {
         static void Main(string[] args)
         {
-            var chunk = new Chunk();
-            chunk.AddConstant(Values.Number(1m));
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Constant, 0, 1);
-            chunk.Write(OpCode.Add, 1);
-            chunk.Write(OpCode.Return, 1);
+            var vm = new VirtualMachine();
 
-            foreach (var instruction in chunk.DisassembleChunk())
-                Console.WriteLine(instruction);
+            while (true)
+            {
+                var expression = Console.ReadLine();
+
+                var chunk = new Chunk();
+                Parser.Compile(expression, chunk);
+
+                vm.Interpret(chunk);
+
+                try
+                {
+                    var value = vm.Pop();
+                    Console.WriteLine($"  = {value}");
+                }
+                catch (RuntimeExecutionException)
+                {
+                }
+            }
         }
     }
 }

@@ -109,11 +109,6 @@ namespace SpeedCalc.Core.Runtime
             ipOffset = 0;
         }
 
-        public void Interpret(string source)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Push(Value value)
         {
             if (value is null)

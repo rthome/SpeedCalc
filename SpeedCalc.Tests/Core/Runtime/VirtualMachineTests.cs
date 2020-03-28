@@ -82,15 +82,6 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void MachineThrowsOnNullSourceString()
-        {
-            var vm = new VirtualMachine();
-
-            string source = null;
-            Assert.ThrowsAny<ArgumentException>(() => vm.Interpret(source));
-        }
-
-        [Fact]
         public void MachinePushesConstant()
         {
             var vm = new VirtualMachine();
@@ -113,9 +104,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.True, OpCode.Nil);
 
             Assert.True(vm.Pop().IsNil());
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().AsBool());
+            Assert.False(vm.Pop().AsBool());
+            Assert.True(vm.Pop().AsBool());
         }
 
         [Fact]
@@ -124,7 +115,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             var vm = new VirtualMachine();
             RunChunkWith(vm, OpCode.False, OpCode.True, OpCode.False, OpCode.Equal, OpCode.Equal);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().AsBool());
             Assert.ThrowsAny<RuntimeExecutionException>(() => vm.Pop());
         }
 
@@ -134,21 +125,21 @@ namespace SpeedCalc.Tests.Core.Runtime
             var vm = new VirtualMachine();
 
             RunChunkWith(vm, OpCode.Nil, OpCode.Not);
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().AsBool());
 
             RunChunkWith(vm, OpCode.False, OpCode.Not);
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().AsBool());
 
             vm.Push(Values.Number(0));
             RunChunkWith(vm, OpCode.Not);
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+            Assert.True(vm.Pop().AsBool());
 
             RunChunkWith(vm, OpCode.True, OpCode.Not);
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
+            Assert.False(vm.Pop().AsBool());
 
             vm.Push(Values.Number(1234));
             RunChunkWith(vm, OpCode.Not);
-            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
+            Assert.False(vm.Pop().AsBool());
         }
 
         [Fact]
@@ -160,7 +151,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             RunChunkWith(vm, OpCode.Add);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Number(7)));
+            Assert.Equal(7M, vm.Pop().AsNumber());
         }
 
         [Fact]
@@ -172,7 +163,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             RunChunkWith(vm, OpCode.Subtract);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Number(3)));
+            Assert.Equal(3M, vm.Pop().AsNumber());
         }
 
         [Fact]
@@ -184,7 +175,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             RunChunkWith(vm, OpCode.Multiply);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Number(10)));
+            Assert.Equal(10M, vm.Pop().AsNumber());
         }
 
         [Fact]
@@ -196,7 +187,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             RunChunkWith(vm, OpCode.Divide);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Number(3)));
+            Assert.Equal(3M, vm.Pop().AsNumber());
         }
 
         [Fact]
@@ -234,10 +225,10 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Push(Values.Number(1));
 
             RunChunkWith(vm, OpCode.Negate);
-            Assert.True(vm.Peek().EqualsValue(Values.Number(-1)));
+            Assert.Equal(-1M, vm.Peek().AsNumber());
 
             RunChunkWith(vm, OpCode.Negate);
-            Assert.True(vm.Pop().EqualsValue(Values.Number(1)));
+            Assert.Equal(1M, vm.Pop().AsNumber());
         }
 
         [Fact]
@@ -269,7 +260,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Interpret(chunk);
             vm.Interpret(secondChunk);
 
-            Assert.True(vm.Pop().EqualsValue(Values.Number(2)));
+            Assert.Equal(2M, vm.Pop().AsNumber());
         }
     }
 }
