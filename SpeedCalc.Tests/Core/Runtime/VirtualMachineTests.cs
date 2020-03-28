@@ -26,6 +26,14 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void PeekOnEmptyStackThrows()
+        {
+            var vm = new VirtualMachine();
+
+            Assert.Throws<RuntimeExecutionException>(() => vm.Peek(0));
+        }
+
+        [Fact]
         public void PushThrowsOnNullValue()
         {
             var vm = new VirtualMachine();
@@ -34,7 +42,21 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void PushAndPopWorkAsStack()
+        public void PeekBeyondStackBorderThrows()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Nil());
+            vm.Push(Values.Nil());
+
+            vm.Peek(0);
+            vm.Peek(1);
+            Assert.Throws<RuntimeExecutionException>(() => vm.Peek(2));
+            Assert.Throws<RuntimeExecutionException>(() => vm.Peek(3));
+            Assert.Throws<RuntimeExecutionException>(() => vm.Peek(1_000_000_000));
+        }
+
+        [Fact]
+        public void PushAndPopAndPeekWorkAsStack()
         {
             var vm = new VirtualMachine();
 
@@ -44,6 +66,8 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Push(firstVal);
             vm.Push(secondVal);
 
+            Assert.True(vm.Peek(0).EqualsValue(secondVal));
+            Assert.True(vm.Peek(1).EqualsValue(firstVal));
             Assert.True(vm.Pop().EqualsValue(secondVal));
             Assert.True(vm.Pop().EqualsValue(firstVal));
         }
@@ -56,7 +80,6 @@ namespace SpeedCalc.Tests.Core.Runtime
             Chunk chunk = null;
             Assert.ThrowsAny<ArgumentException>(() => vm.Interpret(chunk));
         }
-
 
         [Fact]
         public void MachineThrowsOnNullSourceString()
@@ -116,8 +139,51 @@ namespace SpeedCalc.Tests.Core.Runtime
             RunChunkWith(vm, OpCode.False, OpCode.Not);
             Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
 
+            vm.Push(Values.Number(0));
+            RunChunkWith(vm, OpCode.Not);
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(true)));
+
             RunChunkWith(vm, OpCode.True, OpCode.Not);
             Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
+
+            vm.Push(Values.Number(1234));
+            RunChunkWith(vm, OpCode.Not);
+            Assert.True(vm.Pop().EqualsValue(Values.Bool(false)));
+        }
+
+        [Fact]
+        public void MachineAddsNumbers()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Number(5));
+            vm.Push(Values.Number(2));
+
+            RunChunkWith(vm, OpCode.Add);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Number(7)));
+        }
+
+        [Fact]
+        public void MachineChecksTypesForAddition()
+        {
+            {
+                var vm = new VirtualMachine();
+                vm.Push(Values.Number(1));
+
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.Add));
+            }
+
+            {
+                var vm = new VirtualMachine();
+                vm.Push(Values.Number(1));
+
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Add));
+            }
+
+            {
+                var vm = new VirtualMachine();
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.Add));
+            }
         }
 
         [Fact]

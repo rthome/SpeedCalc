@@ -16,7 +16,7 @@ namespace SpeedCalc.Core.Runtime
             byte ReadByte() => executingChunk.Code[ipOffset++];
             Value ReadConstant() => executingChunk.Constants[ReadByte()];
 
-            static bool IsFalsey(Value value) => value.IsNil() || (value.IsBool() && !value.AsBool());
+            static bool IsFalsey(Value value) => value.IsNil() || (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
 
             while (true)
             {
@@ -53,6 +53,14 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Less:
                         break;
                     case OpCode.Add:
+                        {
+                            if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
+                                throw new RuntimeExecutionException("Addition operands must be numbers");
+                            var a = Pop().AsNumber();
+                            var b = Pop().AsNumber();
+                            var sum = Values.Number(a + b);
+                            Push(sum);
+                        }
                         break;
                     case OpCode.Subtract:
                         break;
@@ -108,6 +116,15 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack");
 
             return stack[stackTopOffset];
+        }
+
+        public Value Peek(int distance = 0)
+        {
+            var index = stackTopOffset - 1 - distance;
+            if (index < 0)
+                throw new RuntimeExecutionException("Attempt to peek beyond end of stack");
+
+            return stack[index];
         }
 
         public VirtualMachine()
