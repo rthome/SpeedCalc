@@ -16,6 +16,16 @@ namespace SpeedCalc.Core.Runtime
             byte ReadByte() => executingChunk.Code[ipOffset++];
             Value ReadConstant() => executingChunk.Constants[ReadByte()];
 
+            void BinaryOp(Func<decimal, decimal, Value> op)
+            {
+                if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
+                    throw new RuntimeExecutionException("Operands must be numbers");
+                var a = Pop().AsNumber();
+                var b = Pop().AsNumber();
+                var result = op(a, b);
+                Push(result);
+            }
+
             static bool IsFalsey(Value value) => value.IsNil() || (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
 
             while (true)
@@ -49,24 +59,22 @@ namespace SpeedCalc.Core.Runtime
                         }
                         break;
                     case OpCode.Greater:
+                        BinaryOp((a, b) => Values.Bool(a > b));
                         break;
                     case OpCode.Less:
+                        BinaryOp((a, b) => Values.Bool(a < b));
                         break;
                     case OpCode.Add:
-                        {
-                            if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
-                                throw new RuntimeExecutionException("Addition operands must be numbers");
-                            var a = Pop().AsNumber();
-                            var b = Pop().AsNumber();
-                            var sum = Values.Number(a + b);
-                            Push(sum);
-                        }
+                        BinaryOp((a, b) => Values.Number(a + b));
                         break;
                     case OpCode.Subtract:
+                        BinaryOp((a, b) => Values.Number(a - b));
                         break;
                     case OpCode.Multiply:
+                        BinaryOp((a, b) => Values.Number(a * b));
                         break;
                     case OpCode.Divide:
+                        BinaryOp((a, b) => Values.Number(a / b));
                         break;
                     case OpCode.Not:
                         {

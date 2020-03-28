@@ -164,7 +164,43 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void MachineChecksTypesForAddition()
+        public void MachineSubtractsNumbers()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Number(2));
+            vm.Push(Values.Number(5));
+
+            RunChunkWith(vm, OpCode.Subtract);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Number(3)));
+        }
+
+        [Fact]
+        public void MachineMultipliesNumbers()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Number(5));
+            vm.Push(Values.Number(2));
+
+            RunChunkWith(vm, OpCode.Multiply);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Number(10)));
+        }
+
+        [Fact]
+        public void MachineDividesNumbers()
+        {
+            var vm = new VirtualMachine();
+            vm.Push(Values.Number(2));
+            vm.Push(Values.Number(6));
+
+            RunChunkWith(vm, OpCode.Divide);
+
+            Assert.True(vm.Pop().EqualsValue(Values.Number(3)));
+        }
+
+        [Fact]
+        public void MachineChecksTypesForBinaryOps()
         {
             {
                 var vm = new VirtualMachine();
@@ -177,12 +213,17 @@ namespace SpeedCalc.Tests.Core.Runtime
                 var vm = new VirtualMachine();
                 vm.Push(Values.Number(1));
 
-                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Add));
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Subtract));
             }
 
             {
                 var vm = new VirtualMachine();
-                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.Add));
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.Multiply));
+            }
+
+            {
+                var vm = new VirtualMachine();
+                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.False, OpCode.Divide));
             }
         }
 
