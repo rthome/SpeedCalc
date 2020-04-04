@@ -1,5 +1,6 @@
 ﻿using SpeedCalc.Core.Runtime;
-
+using System;
+using System.IO;
 using Xunit;
 
 namespace SpeedCalc.Tests.Core.Runtime
@@ -17,45 +18,95 @@ namespace SpeedCalc.Tests.Core.Runtime
             return vm.Pop();
         }
 
+        string RunScriptAndCaptureOutput(string source)
+        {
+            var chunk = new Chunk();
+            Assert.True(Parser.Compile(source, chunk));
+
+
+            var vm = new VirtualMachine();
+            var writer = new StringWriter();
+
+            vm.SetStdOut(writer);
+            vm.Interpret(chunk);
+
+            return writer.ToString().TrimEnd('\r', '\n');
+        }
+
         [Fact]
         public void RunsSingleNumberExpr()
         {
-            var result = RunScriptAndPop("1024");
-            Assert.Equal(1024M, result.AsNumber());
+            var result = RunScriptAndCaptureOutput("print 1024;");
+            Assert.Equal("1024", result);
         }
 
         [Fact]
         public void RunsSingleBoolExprs()
         {
-            var trueResult = RunScriptAndPop("true");
-            Assert.True(trueResult.AsBool());
+            var trueResult = RunScriptAndCaptureOutput("print true;");
+            Assert.Equal("true", trueResult);
 
-            var falseResult = RunScriptAndPop("false");
-            Assert.False(falseResult.AsBool());
+            var falseResult = RunScriptAndCaptureOutput("print false;");
+            Assert.Equal("false", falseResult);
         }
 
         [Fact]
         public void RunsAddExpr()
         {
-            var result0 = RunScriptAndPop("10 + 1");
-            Assert.Equal(11M, result0.AsNumber());
+            var result0 = RunScriptAndCaptureOutput("print 10 + 1;");
+            Assert.Equal("11", result0);
 
-            var result1 = RunScriptAndPop("0.5 + 1.5");
-            Assert.Equal(2M, result1.AsNumber());
+            var result1 = RunScriptAndCaptureOutput("print 0.5 + 1.5;");
+            Assert.Equal("2", result1);
         }
 
         [Fact]
         public void RunsTwoAddExprs()
         {
-            var result = RunScriptAndPop("1+2+3");
-            Assert.Equal(6M, result.AsNumber());
+            var result = RunScriptAndCaptureOutput("print 1+2+3;");
+            Assert.Equal("6", result);
         }
 
         [Fact]
         public void RunsMultipleAddExprs()
         {
-            var result = RunScriptAndPop("1+2+3+4+5+6+7+8+9+8+7+6+5+4+3+2+1");
-            Assert.Equal(81M, result.AsNumber());
+            var result = RunScriptAndCaptureOutput("print 1+2+3+4+5+6+7+8+9+8+7+6+5+4+3+2+1;");
+            Assert.Equal("81", result);
+        }
+
+        [Fact]
+        public void RunsGroupedAddAndMulExpr()
+        {
+            var result = RunScriptAndCaptureOutput("print (2+3)+(2*3);");
+            Assert.Equal("11", result);
+        }
+
+        [Fact]
+        public void RunsSubtractExpr()
+        {
+            var result = RunScriptAndCaptureOutput("print 7000 - 1;");
+            Assert.Equal("6999", result);
+        }
+
+        [Fact]
+        public void RunsDivisionExpr()
+        {
+            var result = RunScriptAndCaptureOutput("print 10/2;");
+            Assert.Equal("5", result);
+        }
+
+        [Fact]
+        public void RunsExponentiationExpr()
+        {
+            var result = RunScriptAndCaptureOutput("print 5**2;");
+            Assert.Equal("25", result);
+        }
+
+        [Fact]
+        public void RunsPrintStmt()
+        {
+            var output = RunScriptAndCaptureOutput("print 1000;");
+            Assert.Equal("1000", output);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace SpeedCalc.Core.Runtime
         Nil,
         True,
         False,
+        Pop,
         Equal,
         Greater,
         Less,
@@ -16,8 +17,10 @@ namespace SpeedCalc.Core.Runtime
         Subtract,
         Multiply,
         Divide,
+        Exp,
         Not,
         Negate,
+        Print,
         Return,
     };
 

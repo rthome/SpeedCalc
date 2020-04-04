@@ -1,7 +1,7 @@
 ﻿using SpeedCalc.Core.Runtime;
 
 using System;
-
+using System.IO;
 using Xunit;
 
 namespace SpeedCalc.Tests.Core.Runtime
@@ -82,6 +82,32 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void MachineThrowsOnNullStdOut()
+        {
+            var vm = new VirtualMachine();
+
+            Assert.ThrowsAny<ArgumentException>(() => vm.SetStdOut(null));
+        }
+
+        [Fact]
+        public void MachineDefaultStdOutToConsole()
+        {
+            var vm = new VirtualMachine();
+
+            Assert.Same(Console.Out, vm.StdOut);
+        }
+
+        [Fact]
+        public void MachineSetsGivenStdOut()
+        {
+            var vm = new VirtualMachine();
+            var writer = new StringWriter();
+
+            vm.SetStdOut(writer);
+            Assert.Same(writer, vm.StdOut);
+        }
+
+        [Fact]
         public void MachinePushesConstant()
         {
             var vm = new VirtualMachine();
@@ -146,8 +172,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineAddsNumbers()
         {
             var vm = new VirtualMachine();
-            vm.Push(Values.Number(5));
             vm.Push(Values.Number(2));
+            vm.Push(Values.Number(5));
 
             RunChunkWith(vm, OpCode.Add);
 
@@ -158,8 +184,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineSubtractsNumbers()
         {
             var vm = new VirtualMachine();
-            vm.Push(Values.Number(2));
             vm.Push(Values.Number(5));
+            vm.Push(Values.Number(2));
 
             RunChunkWith(vm, OpCode.Subtract);
 
@@ -170,8 +196,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineMultipliesNumbers()
         {
             var vm = new VirtualMachine();
-            vm.Push(Values.Number(5));
             vm.Push(Values.Number(2));
+            vm.Push(Values.Number(5));
 
             RunChunkWith(vm, OpCode.Multiply);
 
@@ -182,8 +208,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineDividesNumbers()
         {
             var vm = new VirtualMachine();
-            vm.Push(Values.Number(2));
             vm.Push(Values.Number(6));
+            vm.Push(Values.Number(2));
 
             RunChunkWith(vm, OpCode.Divide);
 

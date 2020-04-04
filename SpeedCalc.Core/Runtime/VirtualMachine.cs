@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace SpeedCalc.Core.Runtime
 {
@@ -11,6 +12,8 @@ namespace SpeedCalc.Core.Runtime
         int ipOffset;
         int stackTopOffset;
 
+        public TextWriter StdOut { get; private set; }
+
         void Run()
         {
             byte ReadByte() => executingChunk.Code[ipOffset++];
@@ -20,8 +23,8 @@ namespace SpeedCalc.Core.Runtime
             {
                 if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
                     throw new RuntimeExecutionException("Operands must be numbers");
-                var a = Pop().AsNumber();
                 var b = Pop().AsNumber();
+                var a = Pop().AsNumber();
                 var result = op(a, b);
                 Push(result);
             }
@@ -50,6 +53,9 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.False:
                         Push(Values.Bool(false));
                         break;
+                    case OpCode.Pop:
+                        Pop();
+                        break;
                     case OpCode.Equal:
                         {
                             var a = Pop();
@@ -76,6 +82,9 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Divide:
                         BinaryOp((a, b) => Values.Number(a / b));
                         break;
+                    case OpCode.Exp:
+                        BinaryOp((a, b) => Values.Number((decimal)Math.Pow((double)a, (double)b)));
+                        break;
                     case OpCode.Not:
                         {
                             var falsey = IsFalsey(Pop());
@@ -88,6 +97,9 @@ namespace SpeedCalc.Core.Runtime
                                 throw new RuntimeExecutionException("Operand must be a number");
                             Push(Values.Number(-Pop().AsNumber()));
                         }
+                        break;
+                    case OpCode.Print:
+                        StdOut.WriteLine(Pop().ToString());
                         break;
                     case OpCode.Return:
                         return;
@@ -135,9 +147,12 @@ namespace SpeedCalc.Core.Runtime
             return stack[index];
         }
 
+        public void SetStdOut(TextWriter writer) => StdOut = writer ?? throw new ArgumentNullException(nameof(writer));
+
         public VirtualMachine()
         {
             stack = new Value[MaxStackSize];
+            SetStdOut(Console.Out);
         }
     }
 }

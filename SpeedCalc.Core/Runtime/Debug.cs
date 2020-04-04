@@ -19,13 +19,14 @@ namespace SpeedCalc.Core.Runtime
             {
                 case OpCode.Constant:
                     var constant = chunk.Code[offset + 1];
-                    sb.Append($"{instr.ToString()} {constant,4:D4} {chunk.Constants[constant]}");
+                    sb.Append($"{instr} {constant,4:D4} {chunk.Constants[constant]}");
                     return (offset + 2, sb.ToString());
 
                 case OpCode.Nop:
                 case OpCode.Nil:
                 case OpCode.True:
                 case OpCode.False:
+                case OpCode.Pop:
                 case OpCode.Equal:
                 case OpCode.Greater:
                 case OpCode.Less:
@@ -33,8 +34,10 @@ namespace SpeedCalc.Core.Runtime
                 case OpCode.Subtract:
                 case OpCode.Multiply:
                 case OpCode.Divide:
+                case OpCode.Exp:
                 case OpCode.Not:
                 case OpCode.Negate:
+                case OpCode.Print:
                 case OpCode.Return:
                     sb.Append(instr.ToString());
                     return (offset + 1, sb.ToString());

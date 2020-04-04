@@ -19,12 +19,12 @@ namespace SpeedCalc.Tests.Core.Runtime
             get
             {
                 yield return new object[] { "1+1", new[] { (Number, "1"), (Plus, "+"), (Number, "1") } };
-                yield return new object[] { "f(x) = x**2",
-                    new[] { (Identifier, "f"), (ParenLeft, "("), (Identifier, "x"), (ParenRight, ")"), (Equal, "="), (Identifier, "x"), (StarStar, "**"), (Number, "2") } };
-                yield return new object[] { "sin(alpha) = cos(deg(90) - alpha)",
+                yield return new object[] { "f(x) = x**2;",
+                    new[] { (Identifier, "f"), (ParenLeft, "("), (Identifier, "x"), (ParenRight, ")"), (Equal, "="), (Identifier, "x"), (StarStar, "**"), (Number, "2"), (Semicolon, ";") } };
+                yield return new object[] { "sin(alpha) = cos(deg(90) - alpha);",
                     new[] { (Identifier, "sin"), (ParenLeft, "("), (Identifier, "alpha"), (ParenRight, ")"), (Equal, "="),
-                        (Identifier, "cos"), (ParenLeft, "("), (Identifier, "deg"), (ParenLeft, "("), (Number, "90"), (ParenRight, ")"), (Minus, "-"), (Identifier, "alpha"), (ParenRight, ")"), } };
-                yield return new object[] { "{ return 1 }", new[] { (BraceLeft, "{"), (Return, "return"), (Number, "1"), (BraceRight, "}") } };
+                        (Identifier, "cos"), (ParenLeft, "("), (Identifier, "deg"), (ParenLeft, "("), (Number, "90"), (ParenRight, ")"), (Minus, "-"), (Identifier, "alpha"), (ParenRight, ")"), (Semicolon, ";") } };
+                yield return new object[] { "fn one { return 1; }", new[] { (Fn, "fn"), (Identifier, "one"), (BraceLeft, "{"), (Return, "return"), (Number, "1"), (Semicolon, ";"), (BraceRight, "}") } };
             }
         }
 
@@ -64,6 +64,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData("}", BraceRight)]
         [InlineData(",", Comma)]
         [InlineData(".", Dot)]
+        [InlineData(";", Semicolon)]
         [InlineData("(", ParenLeft)]
         [InlineData(")", ParenRight)]
         [InlineData("+", Plus)]
@@ -87,6 +88,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData("and", And)]
         [InlineData("else", Else)]
         [InlineData("false", False)]
+        [InlineData("fn", Fn)]
         [InlineData("for", For)]
         [InlineData("if", If)]
         [InlineData("or", Or)]
@@ -94,6 +96,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData("true", True)]
         [InlineData("var", Var)]
         [InlineData("while", While)]
+        [InlineData("print", Print)]
         public void KeywordTokens(string lexeme, TokenType expectedType)
         {
             ScanSingleToken(lexeme, expectedType);

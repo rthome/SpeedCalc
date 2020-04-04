@@ -55,5 +55,16 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Equal((byte)OpCode.Negate, chunk.Code[2]);
             Assert.Equal(1, chunk.Constants.Count);
         }
+
+        [Fact]
+        public void ParserCompilesPrintStmt()
+        {
+            var chunk = new Chunk();
+            Parser.Compile("print 123;", chunk);
+
+            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
+            Assert.Equal((byte)0, chunk.Code[1]);
+            Assert.Equal((byte)OpCode.Print, chunk.Code[2]);
+        }
     }
 }

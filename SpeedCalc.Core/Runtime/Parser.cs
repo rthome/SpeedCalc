@@ -60,34 +60,37 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     null,   Precedence.None),       // EOF
             new Rule(Grouping, null,   Precedence.None),       // ParenLeft
             new Rule(null,     null,   Precedence.None),       // ParenRight
-            new Rule(null,     null,   Precedence.None),       // BraceLeft,
-            new Rule(null,     null,   Precedence.None),       // BraceRight,
-            new Rule(null,     null,   Precedence.None),       // Comma,
-            new Rule(null,     null,   Precedence.None),       // Dot,
-            new Rule(Unary,    Binary, Precedence.Term),       // Minus,
-            new Rule(null,     Binary, Precedence.Term),       // Plus,
-            new Rule(null,     Binary, Precedence.Factor),     // Slash,
-            new Rule(Unary,    null,   Precedence.None),       // Bang, 
-            new Rule(null,     Binary, Precedence.Equality),   // BangEqual,
-            new Rule(null,     null,   Precedence.None),       // Equal,
-            new Rule(null,     Binary, Precedence.Equality),   // EqualEqual,
-            new Rule(null,     Binary, Precedence.Comparison), // LessEqual,
-            new Rule(null,     Binary, Precedence.Comparison), // Greater,
-            new Rule(null,     Binary, Precedence.Comparison), // GreaterEqual,
-            new Rule(null,     Binary, Precedence.Comparison), // Less,
-            new Rule(null,     Binary, Precedence.Factor),     // Star,
-            new Rule(null,     Binary, Precedence.Exponent),   // StarStar,
-            new Rule(null,     null,   Precedence.None),       // Identifier,
-            new Rule(Number,   null,   Precedence.None),       // Number,
-            new Rule(null,     null,   Precedence.None),       // And,
-            new Rule(null,     null,   Precedence.None),       // Else,
-            new Rule(Literal,  null,   Precedence.None),       // False,
-            new Rule(null,     null,   Precedence.None),       // For,
-            new Rule(null,     null,   Precedence.None),       // If,
-            new Rule(null,     null,   Precedence.None),       // Or,
-            new Rule(null,     null,   Precedence.None),       // Return,
-            new Rule(Literal,  null,   Precedence.None),       // True,
-            new Rule(null,     null,   Precedence.None),       // Var,
+            new Rule(null,     null,   Precedence.None),       // BraceLeft
+            new Rule(null,     null,   Precedence.None),       // BraceRight
+            new Rule(null,     null,   Precedence.None),       // Comma
+            new Rule(null,     null,   Precedence.None),       // Dot
+            new Rule(null,     null,   Precedence.None),       // Semicolon
+            new Rule(Unary,    Binary, Precedence.Term),       // Minus
+            new Rule(null,     Binary, Precedence.Term),       // Plus
+            new Rule(null,     Binary, Precedence.Factor),     // Slash
+            new Rule(Unary,    null,   Precedence.None),       // Bang
+            new Rule(null,     Binary, Precedence.Equality),   // BangEqual
+            new Rule(null,     null,   Precedence.None),       // Equal
+            new Rule(null,     Binary, Precedence.Equality),   // EqualEqual
+            new Rule(null,     Binary, Precedence.Comparison), // Greater
+            new Rule(null,     Binary, Precedence.Comparison), // GreaterEqual
+            new Rule(null,     Binary, Precedence.Comparison), // Less
+            new Rule(null,     Binary, Precedence.Comparison), // LessEqual
+            new Rule(null,     Binary, Precedence.Factor),     // Star
+            new Rule(null,     Binary, Precedence.Exponent),   // StarStar
+            new Rule(null,     null,   Precedence.None),       // Identifier
+            new Rule(Number,   null,   Precedence.None),       // Number
+            new Rule(null,     null,   Precedence.None),       // And
+            new Rule(null,     null,   Precedence.None),       // Else
+            new Rule(Literal,  null,   Precedence.None),       // False
+            new Rule(null,     null,   Precedence.None),       // Fn,
+            new Rule(null,     null,   Precedence.None),       // For
+            new Rule(null,     null,   Precedence.None),       // If
+            new Rule(null,     null,   Precedence.None),       // Or
+            new Rule(null,     null,   Precedence.None),       // Print
+            new Rule(null,     null,   Precedence.None),       // Return
+            new Rule(Literal,  null,   Precedence.None),       // True
+            new Rule(null,     null,   Precedence.None),       // Var
             new Rule(null,     null,   Precedence.None),       // While
         };
 
@@ -140,6 +143,43 @@ namespace SpeedCalc.Core.Runtime
                 Advance(state);
             else
                 ErrorAtCurrent(state, message);
+        }
+
+        static bool Check(State state, TokenType type) => state.Current.Type == type;
+
+        static bool Match(State state, TokenType type)
+        {
+            if (!Check(state, type))
+                return false;
+            Advance(state);
+            return true;
+        }
+
+        static void Synchronize(State state)
+        {
+            state.PanicMode = false;
+
+            while(state.Current.Type != TokenType.EOF)
+            {
+                if (state.Previous.Type == TokenType.Semicolon)
+                    return;
+
+                switch (state.Current.Type)
+                {
+                    case TokenType.Fn:
+                    case TokenType.Var:
+                    case TokenType.For:
+                    case TokenType.If:
+                    case TokenType.While:
+                    case TokenType.Print:
+                    case TokenType.Return:
+                        return;
+
+                    default:
+                        Advance(state);
+                        break;
+                }
+            }
         }
 
         static byte MakeConstant(State state, Value value)
@@ -267,6 +307,7 @@ namespace SpeedCalc.Core.Runtime
                     Emit(state, OpCode.Multiply);
                     break;
                 case TokenType.StarStar:
+                    Emit(state, OpCode.Exp);
                     break;
 
                 default:
@@ -287,15 +328,45 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static void Grouping(State state)
+        {
+            Expression(state);
+            Consume(state, TokenType.ParenRight, "Expect ')' after expression");
+        }
+
         static void Expression(State state)
         {
             ParsePrecedence(state, Precedence.Assignment);
         }
 
-        static void Grouping(State state)
+        static void ExpressionStatement(State state)
         {
             Expression(state);
-            Consume(state, TokenType.ParenRight, "Expect ')' after expression");
+            Consume(state, TokenType.Semicolon, "Expect ';' after expression");
+            Emit(state, OpCode.Pop);
+        }
+
+        static void PrintStatement(State state)
+        {
+            Expression(state);
+            Consume(state, TokenType.Semicolon, "Expect ';' after value");
+            Emit(state, OpCode.Print);
+        }
+
+        static void Statement(State state)
+        {
+            if (Match(state, TokenType.Print))
+                PrintStatement(state);
+            else
+                ExpressionStatement(state);
+        }
+
+        static void Declaration(State state)
+        {
+            Statement(state);
+
+            if (state.PanicMode)
+                Synchronize(state);
         }
 
         #endregion
@@ -309,7 +380,10 @@ namespace SpeedCalc.Core.Runtime
             };
 
             Advance(state);
-            Expression(state);
+
+            while (!Match(state, TokenType.EOF))
+                Declaration(state);
+
             Consume(state, TokenType.EOF, "Expect end of expression");
             EndCompile(state);
 

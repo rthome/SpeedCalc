@@ -12,6 +12,7 @@
         BraceRight,
         Comma,
         Dot,
+        Semicolon,
         Minus,
         Plus,
         Slash,
@@ -36,12 +37,14 @@
         And,
         Else,
         False,
+        Fn,
         For,
         If,
         Or,
+        Print,
         Return,
         True,
         Var,
-        While
+        While,
     }
 }

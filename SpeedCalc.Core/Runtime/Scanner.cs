@@ -82,12 +82,14 @@
                         switch (source[start + 1])
                         {
                             case 'a': return CheckKeyword(2, "lse", TokenType.False);
+                            case 'n': return CheckKeyword(2, "", TokenType.Fn);
                             case 'o': return CheckKeyword(2, "r", TokenType.For);
                         }
                     }
                     break;
                 case 'i': return CheckKeyword(1, "f", TokenType.If);
                 case 'o': return CheckKeyword(1, "r", TokenType.Or);
+                case 'p': return CheckKeyword(1, "rint", TokenType.Print);
                 case 'r': return CheckKeyword(1, "eturn", TokenType.Return);
                 case 't': return CheckKeyword(1, "rue", TokenType.True);
                 case 'v': return CheckKeyword(1, "ar", TokenType.Var);
@@ -147,6 +149,7 @@
                         return Number();
                     else
                         return MakeToken(TokenType.Dot);
+                case ';': return MakeToken(TokenType.Semicolon);
                 case '-': return MakeToken(TokenType.Minus);
                 case '+': return MakeToken(TokenType.Plus);
                 case '/': return MakeToken(TokenType.Slash);
