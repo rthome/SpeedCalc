@@ -1,108 +1,167 @@
 ﻿using SpeedCalc.Core.Runtime;
 
+using System;
+using System.Collections.Generic;
+
 using Xunit;
 
 namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ParserTests
     {
+        class Code
+        {
+            public class Seq
+            {
+                readonly Chunk chunk;
+                readonly List<Action> ops = new List<Action>();
+                int offset;
+                private readonly bool toEnd;
+
+                void MakeOp(int size, Action<int> testAction)
+                {
+                    var current = offset;
+                    void op() => testAction(current);
+
+                    offset += size;
+                    ops.Add(op);
+                }
+
+                public Seq Instr(OpCode opcode)
+                {
+                    MakeOp(1, (current) => Assert.Equal(opcode, (OpCode)chunk.Code[current]));
+                    return this;
+                }
+
+                public Seq Print() => Instr(OpCode.Print);
+
+                public Seq Pop() => Instr(OpCode.Pop);
+
+                public Seq Bool(bool value) => Instr(value ? OpCode.True : OpCode.False);
+
+                public Seq Const(OpCode opcode, Value constVal)
+                {
+                    MakeOp(2, (current) =>
+                    {
+                        Assert.Equal(opcode, (OpCode)chunk.Code[current]);
+                        Assert.True(constVal.EqualsValue(chunk.Constants[chunk.Code[current + 1]]));
+                    });
+                    return this;
+                }
+
+                public Seq String(string value) => Const(OpCode.Constant, Values.String(value));
+
+                public Seq Number(decimal value) => Const(OpCode.Constant, Values.Number(value));
+
+                public Seq Global(string name) => Const(OpCode.DefineGlobal, Values.String(name));
+
+                public Seq LoadGlobal(string name) => Const(OpCode.LoadGlobal, Values.String(name));
+
+                public Seq AssignGlobal(string name) => Const(OpCode.AssignGlobal, Values.String(name));
+
+                public void Test()
+                {
+                    if (toEnd)
+                        Instr(OpCode.Return);
+
+                    foreach (var op in ops)
+                        op();
+                }
+
+                public Seq(Chunk chunk, int offset, bool toEnd)
+                {
+                    this.chunk = chunk;
+                    this.offset = offset;
+                    this.toEnd = toEnd;
+                }
+            }
+
+            public static Seq Compile(string source, int initialOffset = 0, bool checkToEnd = true)
+            {
+                var chunk = new Chunk();
+                Parser.Compile(source, chunk);
+                return new Seq(chunk, initialOffset, checkToEnd);
+            }
+        }
+
         [Fact]
         public void ParserCompilesNumberToConstant()
         {
-            var chunk = new Chunk();
-            Parser.Compile("100", chunk);
-
-            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
-            Assert.Equal((byte)0, chunk.Code[1]);
-            Assert.Equal(1, chunk.Constants.Count);
-            Assert.True(chunk.Constants[0].EqualsValue(Values.Number(100)));
+            Code.Compile("100")
+                .Number(100)
+                .Pop()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesLiterals()
         {
-            var trueChunk = new Chunk();
-            Parser.Compile("true", trueChunk);
+            Code.Compile("true")
+                .Bool(true)
+                .Pop()
+                .Test();
 
-            var falseChunk = new Chunk();
-            Parser.Compile("false", falseChunk);
-
-            Assert.Equal((byte)OpCode.True, trueChunk.Code[0]);
-            Assert.Equal(0, trueChunk.Constants.Count);
-            Assert.Equal((byte)OpCode.False, falseChunk.Code[0]);
-            Assert.Equal(0, falseChunk.Constants.Count);
+            Code.Compile("false")
+                .Bool(false)
+                .Pop()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesNotExpr()
         {
-            var chunk = new Chunk();
-            Parser.Compile("!true", chunk);
-
-            Assert.Equal((byte)OpCode.True, chunk.Code[0]);
-            Assert.Equal((byte)OpCode.Not, chunk.Code[1]);
-            Assert.Equal(0, chunk.Constants.Count);
+            Code.Compile("!true")
+                .Bool(true)
+                .Instr(OpCode.Not)
+                .Pop()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesNegateExpr()
         {
-            var chunk = new Chunk();
-            Parser.Compile("-1", chunk);
-
-            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
-            Assert.Equal((byte)0, chunk.Code[1]);
-            Assert.Equal((byte)OpCode.Negate, chunk.Code[2]);
-            Assert.Equal(1, chunk.Constants.Count);
+            Code.Compile("-1")
+                .Number(1)
+                .Instr(OpCode.Negate)
+                .Pop()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesPrintStmt()
         {
-            var chunk = new Chunk();
-            Parser.Compile("print 123;", chunk);
-
-            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
-            Assert.Equal((byte)0, chunk.Code[1]);
-            Assert.Equal((byte)OpCode.Print, chunk.Code[2]);
+            Code.Compile("print 123;")
+                .Number(123)
+                .Print()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesGlobalDefinitionStmt()
         {
-            var chunk = new Chunk();
-            Parser.Compile("var Global = 100;", chunk);
-
-            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
-            Assert.Equal(100, chunk.Constants[chunk.Code[1]].AsNumber());
-            Assert.Equal((byte)OpCode.DefineGlobal, chunk.Code[2]);
-            Assert.Equal("Global", chunk.Constants[chunk.Code[3]].AsString());
-            Assert.Equal((byte)OpCode.Return, chunk.Code[4]);
+            Code.Compile("var Global = 100;")
+                .Number(100)
+                .Global("Global")
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesGlobalLoadStmt()
         {
-            var chunk = new Chunk();
-            Parser.Compile("var Value = 123; print Value;", chunk);
-
-            Assert.Equal((byte)OpCode.LoadGlobal, chunk.Code[4]);
-            Assert.Equal("Value", chunk.Constants[chunk.Code[5]].AsString());
-            Assert.Equal((byte)OpCode.Print, chunk.Code[6]);
-            Assert.Equal((byte)OpCode.Return, chunk.Code[7]);
+            Code.Compile("var Value = 123; print Value;", initialOffset: 4)
+                .LoadGlobal("Value")
+                .Print()
+                .Test();
         }
 
         [Fact]
         public void ParserCompilesGlobalAssignStmt()
         {
-            var chunk = new Chunk();
-            Parser.Compile("var Value = 123; Value = true;", chunk);
-
-            Assert.Equal((byte)OpCode.True, chunk.Code[4]);
-            Assert.Equal((byte)OpCode.AssignGlobal, chunk.Code[5]);
-            Assert.Equal("Value", chunk.Constants[chunk.Code[6]].AsString());
-            Assert.Equal((byte)OpCode.Pop, chunk.Code[7]);
-            Assert.Equal((byte)OpCode.Return, chunk.Code[8]);
+            Code.Compile("var Value = 123; Value = true;", initialOffset: 4)
+                .Bool(true)
+                .AssignGlobal("Value")
+                .Pop()
+                .Test();
         }
     }
 }
