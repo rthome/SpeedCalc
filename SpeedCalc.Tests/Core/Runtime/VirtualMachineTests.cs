@@ -45,8 +45,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void PeekBeyondStackBorderThrows()
         {
             var vm = new VirtualMachine();
-            vm.Push(Values.Nil());
-            vm.Push(Values.Nil());
+            vm.Push(Values.Bool(true));
+            vm.Push(Values.Bool(false));
 
             vm.Peek(0);
             vm.Peek(1);
@@ -127,9 +127,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachinePushesPrimitiveValues()
         {
             var vm = new VirtualMachine();
-            RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.True, OpCode.Nil);
+            RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.True);
 
-            Assert.True(vm.Pop().IsNil());
             Assert.True(vm.Pop().AsBool());
             Assert.False(vm.Pop().AsBool());
             Assert.True(vm.Pop().AsBool());
@@ -149,9 +148,6 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineNotsValues()
         {
             var vm = new VirtualMachine();
-
-            RunChunkWith(vm, OpCode.Nil, OpCode.Not);
-            Assert.True(vm.Pop().AsBool());
 
             RunChunkWith(vm, OpCode.False, OpCode.Not);
             Assert.True(vm.Pop().AsBool());
@@ -228,19 +224,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             {
                 var vm = new VirtualMachine();
-                vm.Push(Values.Number(1));
-
-                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Subtract));
-            }
-
-            {
-                var vm = new VirtualMachine();
                 Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.False, OpCode.Multiply));
-            }
-
-            {
-                var vm = new VirtualMachine();
-                Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.False, OpCode.Divide));
             }
         }
 
@@ -261,7 +245,6 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void MachineChecksTypeForNegate()
         {
             var vm = new VirtualMachine();
-            Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.Nil, OpCode.Negate));
             Assert.ThrowsAny<RuntimeExecutionException>(() => RunChunkWith(vm, OpCode.True, OpCode.Negate));
         }
 

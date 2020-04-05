@@ -1,5 +1,7 @@
 ﻿using SpeedCalc.Core.Runtime;
 
+using System;
+
 using Xunit;
 
 namespace SpeedCalc.Tests.Core.Runtime
@@ -9,12 +11,12 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void ValuesAreTheirOwnType()
         {
-            Assert.True(Values.IsNil(Values.Nil()));
-
             Assert.True(Values.Bool(true).IsBool());
             Assert.True(Values.Bool(false).IsBool());
 
             Assert.True(Values.Number(1m).IsNumber());
+
+            Assert.True(Values.String("").IsString());
 
             Assert.True(Values.Function(new object()).IsFunction());
         }
@@ -22,34 +24,39 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void ValuesAreNotSomeOtherType()
         {
-            var nilVal = Values.Nil();
-            Assert.False(nilVal.IsBool());
-            Assert.False(nilVal.IsNumber());
-            Assert.False(nilVal.IsFunction());
-
             var boolVal = Values.Bool(true);
-            Assert.False(boolVal.IsNil());
             Assert.False(boolVal.IsNumber());
+            Assert.False(boolVal.IsString());
             Assert.False(boolVal.IsFunction());
 
             var numberVal = Values.Number(0m);
-            Assert.False(numberVal.IsNil());
             Assert.False(numberVal.IsBool());
+            Assert.False(numberVal.IsString());
             Assert.False(numberVal.IsFunction());
 
-            var funcVal = Values.Function(null);
-            Assert.False(funcVal.IsNil());
+            var stringVal = Values.String("");
+            Assert.False(stringVal.IsBool());
+            Assert.False(stringVal.IsNumber());
+            Assert.False(stringVal.IsFunction());
+
+            var funcVal = Values.Function(new object());
             Assert.False(funcVal.IsBool());
+            Assert.False(funcVal.IsString());
             Assert.False(funcVal.IsNumber());
         }
 
         [Fact]
         public void ValueTypesRejectNull()
         {
-            Assert.False(Values.IsNil(null));
-            Assert.False(Values.IsBool(null));
-            Assert.False(Values.IsNumber(null));
-            Assert.False(Values.IsFunction(null));
+            Assert.ThrowsAny<ArgumentException>(() => Values.IsBool(null));
+            Assert.ThrowsAny<ArgumentException>(() => Values.IsNumber(null));
+            Assert.ThrowsAny<ArgumentException>(() => Values.IsString(null));
+            Assert.ThrowsAny<ArgumentException>(() => Values.IsFunction(null));
+
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsBool());
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsNumber());
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsString());
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsFunction());
         }
 
         [Fact]
@@ -62,30 +69,31 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Equal(1m, Values.Number(1m).AsNumber());
             Assert.Equal(1000.500m, Values.Number(1000.500m).AsNumber());
 
-            Assert.Null(Values.Function(null).AsFunction());
+            Assert.Equal("", Values.String("").AsString());
+            Assert.Equal("test", Values.String("test").AsString());
+
+            var tempFunctionValue = new object();
+            Assert.Same(tempFunctionValue, Values.Function(tempFunctionValue).AsFunction());
         }
 
         [Fact]
         public void ValuesThrowWhenCallingInvalidUnwrapFunction()
         {
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Nil().AsBool());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Nil().AsNumber());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Nil().AsFunction());
-
             Assert.Throws<RuntimeValueTypeException>(() => Values.Bool(true).AsNumber());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Bool(true).AsString());
             Assert.Throws<RuntimeValueTypeException>(() => Values.Bool(true).AsFunction());
 
             Assert.Throws<RuntimeValueTypeException>(() => Values.Number(0m).AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Number(0m).AsString());
             Assert.Throws<RuntimeValueTypeException>(() => Values.Number(0m).AsFunction());
 
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new object()).AsBool());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new object()).AsNumber());
-        }
+            Assert.Throws<RuntimeValueTypeException>(() => Values.String("").AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.String("").AsNumber());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.String("").AsFunction());
 
-        [Fact]
-        public void NilValueEquality()
-        {
-            Assert.True(Values.Nil().EqualsValue(Values.Nil()));
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new object()).AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new object()).AsString());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new object()).AsNumber());
         }
 
         [Fact]
@@ -118,11 +126,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void ValuesOfDifferentTypesAreNotEqual()
         {
-            Assert.False(Values.Nil().EqualsValue(Values.Bool(false)));
-            Assert.False(Values.Nil().EqualsValue(Values.Number(0m)));
-            Assert.False(Values.Nil().EqualsValue(Values.Function(new object())));
-
-            Assert.False(Values.Bool(true).EqualsValue(Values.Nil()));
+            Assert.False(Values.Bool(true).EqualsValue(Values.String("")));
             Assert.False(Values.Bool(true).EqualsValue(Values.Number(0m)));
             Assert.False(Values.Bool(true).EqualsValue(Values.Function(new object())));
         }

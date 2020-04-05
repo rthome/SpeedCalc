@@ -7,15 +7,13 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
-        Value RunScriptAndPop(string source)
+        void RunScript(string source)
         {
             var chunk = new Chunk();
             Assert.True(Parser.Compile(source, chunk));
 
             var vm = new VirtualMachine();
             vm.Interpret(chunk);
-
-            return vm.Pop();
         }
 
         string RunScriptAndCaptureOutput(string source)
@@ -107,6 +105,31 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             var output = RunScriptAndCaptureOutput("print 1000;");
             Assert.Equal("1000", output);
+        }
+
+        [Fact]
+        public void RunsGlobalNumberStmt()
+        {
+            RunScript("var GlobalVariable = 1000;");
+        }
+
+        [Fact]
+        public void RunsGlobalBoolStmt()
+        {
+            RunScript("var GlobalBoolean = true;");
+        }
+
+        [Fact]
+        public void RunsMultipleGlobalNumberStmts()
+        {
+            RunScript("var GlobalVariable = 1000; var AnotherGlobal = false;");
+        }
+
+        [Fact]
+        public void RunsGlobalLookupStmt()
+        {
+            var result = RunScriptAndCaptureOutput("var SomeGlobal = 1; print SomeGlobal;");
+            Assert.Equal("1", result);
         }
     }
 }

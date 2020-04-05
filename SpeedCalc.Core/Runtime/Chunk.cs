@@ -6,10 +6,11 @@ namespace SpeedCalc.Core.Runtime
     {
         Nop,
         Constant,
-        Nil,
         True,
         False,
         Pop,
+        LoadGlobal,
+        DefineGlobal,
         Equal,
         Greater,
         Less,

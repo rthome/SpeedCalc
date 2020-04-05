@@ -62,10 +62,10 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void ChunkWritesConstants()
         {
             var chunk = new Chunk();
-            chunk.AddConstant(Values.Nil());
+            chunk.AddConstant(Values.String("test"));
             chunk.AddConstant(Values.Bool(true));
 
-            Assert.True(chunk.Constants[0].EqualsValue(Values.Nil()));
+            Assert.True(chunk.Constants[0].EqualsValue(Values.String("test")));
             Assert.True(chunk.Constants[1].EqualsValue(Values.Bool(true)));
         }
 
@@ -73,7 +73,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void ChunkReturnsConstantIndices()
         {
             var chunk = new Chunk();
-            Assert.Equal(0, chunk.AddConstant(Values.Nil()));
+            Assert.Equal(0, chunk.AddConstant(Values.Bool(true)));
             Assert.Equal(1, chunk.AddConstant(Values.Number(0m)));
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace SpeedCalc.Core.Runtime
@@ -8,6 +9,8 @@ namespace SpeedCalc.Core.Runtime
         const int MaxStackSize = 256;
 
         readonly Value[] stack;
+        readonly Dictionary<string, Value> globals;
+
         Chunk executingChunk;
         int ipOffset;
         int stackTopOffset;
@@ -29,7 +32,7 @@ namespace SpeedCalc.Core.Runtime
                 Push(result);
             }
 
-            static bool IsFalsey(Value value) => value.IsNil() || (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
+            static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
 
             while (true)
             {
@@ -44,9 +47,6 @@ namespace SpeedCalc.Core.Runtime
                             Push(constant);
                         }
                         break;
-                    case OpCode.Nil:
-                        Push(Values.Nil());
-                        break;
                     case OpCode.True:
                         Push(Values.Bool(true));
                         break;
@@ -55,6 +55,21 @@ namespace SpeedCalc.Core.Runtime
                         break;
                     case OpCode.Pop:
                         Pop();
+                        break;
+                    case OpCode.LoadGlobal:
+                        {
+                            var name = ReadConstant().AsString();
+                            if (!globals.TryGetValue(name, out var value))
+                                throw new RuntimeExecutionException($"Undefined variable '{name}'");
+                            Push(value);
+                        }
+                        break;
+                    case OpCode.DefineGlobal:
+                        {
+                            var globalName = ReadConstant().AsString();
+                            globals[globalName] = Peek();
+                            Pop();
+                        }
                         break;
                     case OpCode.Equal:
                         {
@@ -152,6 +167,7 @@ namespace SpeedCalc.Core.Runtime
         public VirtualMachine()
         {
             stack = new Value[MaxStackSize];
+            globals = new Dictionary<string, Value>(8);
             SetStdOut(Console.Out);
         }
     }

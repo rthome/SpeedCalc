@@ -78,7 +78,7 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     Binary, Precedence.Comparison), // LessEqual
             new Rule(null,     Binary, Precedence.Factor),     // Star
             new Rule(null,     Binary, Precedence.Exponent),   // StarStar
-            new Rule(null,     null,   Precedence.None),       // Identifier
+            new Rule(Variable, null,   Precedence.None),       // Identifier
             new Rule(Number,   null,   Precedence.None),       // Number
             new Rule(null,     null,   Precedence.None),       // And
             new Rule(null,     null,   Precedence.None),       // Else
@@ -238,6 +238,22 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static byte IdentifierConstant(State state, Token name)
+        {
+            return MakeConstant(state, Values.String(name.Lexeme));
+        }
+
+        static byte ParseVariable(State state, string message)
+        {
+            Consume(state, TokenType.Identifier, message);
+            return IdentifierConstant(state, state.Previous);
+        }
+
+        static void DefineVariable(State state, byte global)
+        {
+            Emit(state, OpCode.DefineGlobal, global);
+        }
+
         static void Number(State state)
         {
             var value = decimal.Parse(state.Previous.Lexeme, CultureInfo.InvariantCulture);
@@ -328,6 +344,17 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static void NamedVariable(State state, Token name)
+        {
+            var arg = IdentifierConstant(state, name);
+            Emit(state, OpCode.LoadGlobal, arg);
+        }
+
+        static void Variable(State state)
+        {
+            NamedVariable(state, state.Previous);
+        }
+
         static void Grouping(State state)
         {
             Expression(state);
@@ -361,9 +388,22 @@ namespace SpeedCalc.Core.Runtime
                 ExpressionStatement(state);
         }
 
+        static void VarDeclaration(State state)
+        {
+            var global = ParseVariable(state, "Expect variable name");
+
+            Consume(state, TokenType.Equal, "Expect '=' after variable name");
+            Expression(state);
+            Consume(state, TokenType.Semicolon, "Expect ';' after variable declaration");
+            DefineVariable(state, global);
+        }
+
         static void Declaration(State state)
         {
-            Statement(state);
+            if (Match(state, TokenType.Var))
+                VarDeclaration(state);
+            else
+                Statement(state);
 
             if (state.PanicMode)
                 Synchronize(state);

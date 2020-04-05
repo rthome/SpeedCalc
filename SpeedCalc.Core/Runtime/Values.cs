@@ -12,8 +12,6 @@ namespace SpeedCalc.Core.Runtime
     {
         #region Value Subtypes
 
-        sealed class NilVal : Value { }
-
         sealed class BoolVal : Value
         {
             public bool Value { get; }
@@ -28,38 +26,44 @@ namespace SpeedCalc.Core.Runtime
             public NumberVal(decimal value) => Value = value;
         }
 
+        sealed class StringVal : Value
+        {
+            public string Value { get; }
+
+            public StringVal(string value) => Value = value ?? throw new ArgumentNullException(nameof(value));
+        }
+
         sealed class FunctionVal : Value
         {
             public object Value { get; }
 
-            public FunctionVal(object value) => Value = value;
+            public FunctionVal(object value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         #endregion
 
-        static readonly Value NilInstance = new NilVal();
         static readonly Value TrueInstance = new BoolVal(true);
         static readonly Value FalseInstance = new BoolVal(false);
-
-        public static Value Nil() => NilInstance;
 
         public static Value Bool(bool value) => value ? TrueInstance : FalseInstance;
 
         public static Value Number(decimal value) => new NumberVal(value);
 
+        public static Value String(string value) => new StringVal(value);
+
         public static Value Function(object value) => new FunctionVal(value);
 
-        public static bool IsNil(this Value value) => value is NilVal;
+        public static bool IsBool(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is BoolVal;
 
-        public static bool IsBool(this Value value) => value is BoolVal;
+        public static bool IsNumber(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is NumberVal;
 
-        public static bool IsNumber(this Value value) => value is NumberVal;
+        public static bool IsString(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is StringVal;
 
-        public static bool IsFunction(this Value value) => value is FunctionVal;
+        public static bool IsFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal;
 
         public static bool AsBool(this Value value)
         {
-            if (value is BoolVal val)
+            if ((value ?? throw new ArgumentNullException(nameof(value))) is BoolVal val)
                 return val.Value;
             else
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a bool value.");
@@ -67,15 +71,23 @@ namespace SpeedCalc.Core.Runtime
 
         public static decimal AsNumber(this Value value)
         {
-            if (value is NumberVal val)
+            if ((value ?? throw new ArgumentNullException(nameof(value))) is NumberVal val)
                 return val.Value;
             else
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a number value.");
         }
 
+        public static string AsString(this Value value)
+        {
+            if ((value ?? throw new ArgumentNullException(nameof(value))) is StringVal val)
+                return val.Value;
+            else
+                throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a string value.");
+        }
+
         public static object AsFunction(this Value value)
         {
-            if (value is FunctionVal val)
+            if ((value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal val)
                 return val.Value;
             else
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a function value.");
@@ -88,12 +100,12 @@ namespace SpeedCalc.Core.Runtime
 
             switch (firstValue)
             {
-                case NilVal _:
-                    return true;
                 case BoolVal _:
                     return firstValue.AsBool() == secondValue.AsBool();
                 case NumberVal _:
                     return firstValue.AsNumber() == secondValue.AsNumber();
+                case StringVal _:
+                    return firstValue.AsString() == secondValue.AsString();
                 case FunctionVal _:
                     return firstValue.AsFunction() == secondValue.AsFunction();
             }
@@ -108,14 +120,14 @@ namespace SpeedCalc.Core.Runtime
 
             switch (value)
             {
-                case NilVal _:
-                    return "nil";
                 case BoolVal _:
                     return value.AsBool() ? "true" : "false";
                 case NumberVal _:
                     return value.AsNumber().ToString("G", CultureInfo.InvariantCulture);
+                case StringVal val:
+                    return val.Value;
                 case FunctionVal _:
-                    return "function";
+                    return "<function>";
             }
 
             throw new RuntimeException($"Unknown value type received: '{value.GetType()}'");

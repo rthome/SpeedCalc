@@ -18,12 +18,13 @@ namespace SpeedCalc.Core.Runtime
             switch (instr)
             {
                 case OpCode.Constant:
+                case OpCode.LoadGlobal:
+                case OpCode.DefineGlobal:
                     var constant = chunk.Code[offset + 1];
                     sb.Append($"{instr} {constant,4:D4} {chunk.Constants[constant]}");
                     return (offset + 2, sb.ToString());
 
                 case OpCode.Nop:
-                case OpCode.Nil:
                 case OpCode.True:
                 case OpCode.False:
                 case OpCode.Pop:
