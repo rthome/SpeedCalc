@@ -66,5 +66,43 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Equal((byte)0, chunk.Code[1]);
             Assert.Equal((byte)OpCode.Print, chunk.Code[2]);
         }
+
+        [Fact]
+        public void ParserCompilesGlobalDefinitionStmt()
+        {
+            var chunk = new Chunk();
+            Parser.Compile("var Global = 100;", chunk);
+
+            Assert.Equal((byte)OpCode.Constant, chunk.Code[0]);
+            Assert.Equal(100, chunk.Constants[chunk.Code[1]].AsNumber());
+            Assert.Equal((byte)OpCode.DefineGlobal, chunk.Code[2]);
+            Assert.Equal("Global", chunk.Constants[chunk.Code[3]].AsString());
+            Assert.Equal((byte)OpCode.Return, chunk.Code[4]);
+        }
+
+        [Fact]
+        public void ParserCompilesGlobalLoadStmt()
+        {
+            var chunk = new Chunk();
+            Parser.Compile("var Value = 123; print Value;", chunk);
+
+            Assert.Equal((byte)OpCode.LoadGlobal, chunk.Code[4]);
+            Assert.Equal("Value", chunk.Constants[chunk.Code[5]].AsString());
+            Assert.Equal((byte)OpCode.Print, chunk.Code[6]);
+            Assert.Equal((byte)OpCode.Return, chunk.Code[7]);
+        }
+
+        [Fact]
+        public void ParserCompilesGlobalAssignStmt()
+        {
+            var chunk = new Chunk();
+            Parser.Compile("var Value = 123; Value = true;", chunk);
+
+            Assert.Equal((byte)OpCode.True, chunk.Code[4]);
+            Assert.Equal((byte)OpCode.AssignGlobal, chunk.Code[5]);
+            Assert.Equal("Value", chunk.Constants[chunk.Code[6]].AsString());
+            Assert.Equal((byte)OpCode.Pop, chunk.Code[7]);
+            Assert.Equal((byte)OpCode.Return, chunk.Code[8]);
+        }
     }
 }

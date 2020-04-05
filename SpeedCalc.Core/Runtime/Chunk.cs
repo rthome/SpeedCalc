@@ -11,6 +11,7 @@ namespace SpeedCalc.Core.Runtime
         Pop,
         LoadGlobal,
         DefineGlobal,
+        AssignGlobal,
         Equal,
         Greater,
         Less,

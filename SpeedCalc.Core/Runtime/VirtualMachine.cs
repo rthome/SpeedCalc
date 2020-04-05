@@ -71,6 +71,14 @@ namespace SpeedCalc.Core.Runtime
                             Pop();
                         }
                         break;
+                    case OpCode.AssignGlobal:
+                        {
+                            var name = ReadConstant().AsString();
+                            if (!globals.ContainsKey(name))
+                                throw new RuntimeExecutionException($"Undefined variable '{name}'");
+                            globals[name] = Peek();
+                        }
+                        break;
                     case OpCode.Equal:
                         {
                             var a = Pop();

@@ -36,7 +36,7 @@ namespace SpeedCalc.Core.Runtime
             public bool PanicMode { get; set; }
         }
 
-        delegate void ParseFn(State state);
+        delegate void ParseFn(State state, bool canAssign);
 
         readonly struct Rule
         {
@@ -227,14 +227,19 @@ namespace SpeedCalc.Core.Runtime
                 Error(state, "Expect expression");
             else
             {
-                prefixRule(state);
+                var canAssign = precedence <= Precedence.Assignment;
+                prefixRule(state, canAssign);
 
                 while (precedence <= GetRule(state.Current.Type).Precedence)
                 {
                     Advance(state);
                     var infixRule = GetRule(state.Previous.Type).Infix;
-                    infixRule?.Invoke(state);
+                    infixRule(state, canAssign);
                 }
+
+                if (canAssign && Match(state, TokenType.Equal))
+                    Error(state, "Invalid assignment target");
+
             }
         }
 
@@ -254,13 +259,13 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.DefineGlobal, global);
         }
 
-        static void Number(State state)
+        static void Number(State state, bool canAssign)
         {
             var value = decimal.Parse(state.Previous.Lexeme, CultureInfo.InvariantCulture);
             EmitConstant(state, Values.Number(value));
         }
 
-        static void Unary(State state)
+        static void Unary(State state, bool canAssign)
         {
             var operatorType = state.Previous.Type;
 
@@ -280,7 +285,7 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
-        static void Binary(State state)
+        static void Binary(State state, bool canAssign)
         {
             var operatorType = state.Previous.Type;
 
@@ -331,7 +336,7 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
-        static void Literal(State state)
+        static void Literal(State state, bool canAssign)
         {
             switch (state.Previous.Type)
             {
@@ -344,18 +349,25 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
-        static void NamedVariable(State state, Token name)
+        static void NamedVariable(State state, Token name, bool canAssign)
         {
             var arg = IdentifierConstant(state, name);
-            Emit(state, OpCode.LoadGlobal, arg);
+
+            if (canAssign && Match(state, TokenType.Equal))
+            {
+                Expression(state);
+                Emit(state, OpCode.AssignGlobal, arg);
+            }
+            else
+                Emit(state, OpCode.LoadGlobal, arg);
         }
 
-        static void Variable(State state)
+        static void Variable(State state, bool canAssign)
         {
-            NamedVariable(state, state.Previous);
+            NamedVariable(state, state.Previous, canAssign);
         }
 
-        static void Grouping(State state)
+        static void Grouping(State state, bool canAssign)
         {
             Expression(state);
             Consume(state, TokenType.ParenRight, "Expect ')' after expression");

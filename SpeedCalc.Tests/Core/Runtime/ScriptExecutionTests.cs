@@ -131,5 +131,12 @@ namespace SpeedCalc.Tests.Core.Runtime
             var result = RunScriptAndCaptureOutput("var SomeGlobal = 1; print SomeGlobal;");
             Assert.Equal("1", result);
         }
+        
+        [Fact]
+        public void RunsGlobalAssignmentStmts()
+        {
+            var result = RunScriptAndCaptureOutput("var A = 1; var B = 2; var A = A + B; print A;");
+            Assert.Equal("3", result);
+        }
     }
 }
