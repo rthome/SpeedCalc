@@ -55,6 +55,12 @@ namespace SpeedCalc.Core.Runtime
             if (constantValue is null)
                 throw new ArgumentNullException(nameof(constantValue));
 
+            for (int i = 0; i < Constants.Count; i++)
+            {
+                if (Constants[i].EqualsValue(constantValue))
+                    return i;
+            }
+
             Constants.Write(constantValue);
             return Constants.Count - 1;
         }

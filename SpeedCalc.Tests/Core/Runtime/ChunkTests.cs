@@ -76,5 +76,20 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Equal(0, chunk.AddConstant(Values.Bool(true)));
             Assert.Equal(1, chunk.AddConstant(Values.Number(0m)));
         }
+
+        [Fact]
+        public void ChunkDeduplicatesConstants()
+        {
+            var chunk = new Chunk();
+            var zeroIndex = chunk.AddConstant(Values.Number(0m));
+            var testIndex = chunk.AddConstant(Values.String("test"));
+            var secondZeroIndex = chunk.AddConstant(Values.Number(0m));
+            var secondTestIndex = chunk.AddConstant(Values.String("test"));
+
+            Assert.Equal(zeroIndex, secondZeroIndex);
+            Assert.NotEqual(zeroIndex, testIndex);
+            Assert.Equal(testIndex, secondTestIndex);
+
+        }
     }
 }
