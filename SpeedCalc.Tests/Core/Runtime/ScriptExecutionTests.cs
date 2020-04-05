@@ -7,6 +7,18 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
+        void CompilesScript(string source)
+        {
+            var chunk = new Chunk();
+            Assert.True(Parser.Compile(source, chunk));
+        }
+
+        void CompilerErrors(string source)
+        {
+            var chunk = new Chunk();
+            Assert.False(Parser.Compile(source, chunk));
+        }
+
         void RunScript(string source)
         {
             var chunk = new Chunk();
@@ -137,6 +149,46 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             var result = RunScriptAndCaptureOutput("var A = 1; var B = 2; var A = A + B; print A;");
             Assert.Equal("3", result);
+        }
+
+        [Fact]
+        public void RunsDeclareLocal()
+        {
+            RunScript("{ var a = 1; }");
+        }
+
+        [Fact]
+        public void RunsPrintLocal()
+        {
+            var result = RunScriptAndCaptureOutput("{ var a = 1; print a; }");
+            Assert.Equal("1", result);
+        }
+
+        [Fact]
+        public void RunsAddLocals()
+        {
+            var result = RunScriptAndCaptureOutput("{ var a = 1; var b = 2; print a + b; }");
+            Assert.Equal("3", result);
+        }
+
+        [Fact]
+        public void ErrorsOnVariableRedefinitionInSameScope()
+        {
+            CompilerErrors("{ var a = 1; var a = 100; }");
+        }
+
+        [Fact]
+        public void RunsShadowedLocalPrint()
+        {
+            var result = RunScriptAndCaptureOutput("{ var a = 1; { var a = true; print a; } }");
+            Assert.Equal("true", result);
+        }
+
+        [Fact]
+        public void RunsLocalShadowingGlobalPrint()
+        {
+            var result = RunScriptAndCaptureOutput("var global = 1234; { var global = false; print global; }");
+            Assert.Equal("false", result);
         }
     }
 }

@@ -21,11 +21,38 @@ namespace SpeedCalc.Core.Runtime
 
     public static class Parser
     {
+        public struct Local
+        {
+            public Token Token;
+            public int Depth;
+        }
+
+        public sealed class Compiler
+        {
+            public Local[] Locals { get; } = new Local[byte.MaxValue + 1];
+            
+            public int LocalCount { get; set; }
+
+            public int ScopeDepth { get; set; }
+
+            public void AddLocal(State state, Token name)
+            {
+                if (LocalCount == byte.MaxValue)
+                    Error(state, "Too many locals in function");
+
+                var index = LocalCount++;
+                Locals[index].Token = name;
+                Locals[index].Depth = ScopeDepth;
+            }
+        }
+
         public sealed class State
         {
             public Scanner Scanner { get; set; }
 
             public Chunk CompilingChunk { get; set; }
+
+            public Compiler Compiler { get; set; }
 
             public Token Current { get; set; }
 
@@ -215,6 +242,22 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static void BeginScope(State state)
+        {
+            state.Compiler.ScopeDepth++;
+        }
+
+        static void EndScope(State state)
+        {
+            state.Compiler.ScopeDepth--;
+
+            while (state.Compiler.LocalCount > 0 && state.Compiler.Locals[state.Compiler.LocalCount - 1].Depth > state.Compiler.ScopeDepth)
+            {
+                Emit(state, OpCode.Pop);
+                state.Compiler.LocalCount--;
+            }
+        }
+
         #endregion
 
         #region Parsing Functions
@@ -248,14 +291,41 @@ namespace SpeedCalc.Core.Runtime
             return MakeConstant(state, Values.String(name.Lexeme));
         }
 
+        static void DeclareVariable(State state)
+        {
+            if (state.Compiler.ScopeDepth == 0)
+                return;
+
+            var name = state.Previous;
+            for (int i = state.Compiler.LocalCount - 1; i >= 0; i--)
+            {
+                var local = state.Compiler.Locals[i];
+                if (local.Depth != -1 && local.Depth < state.Compiler.ScopeDepth)
+                    break;
+
+                if (name.Lexeme == local.Token.Lexeme)
+                    Error(state, "Variable with this name already defined in this scope");
+            }
+
+            state.Compiler.AddLocal(state, name);
+        }
+
         static byte ParseVariable(State state, string message)
         {
             Consume(state, TokenType.Identifier, message);
+
+            DeclareVariable(state);
+            if (state.Compiler.ScopeDepth > 0)
+                return 0;
+
             return IdentifierConstant(state, state.Previous);
         }
 
         static void DefineVariable(State state, byte global)
         {
+            if (state.Compiler.ScopeDepth > 0)
+                return;
+
             Emit(state, OpCode.DefineGlobal, global);
         }
 
@@ -378,6 +448,13 @@ namespace SpeedCalc.Core.Runtime
             ParsePrecedence(state, Precedence.Assignment);
         }
 
+        static void Block(State state)
+        {
+            while (!Check(state, TokenType.BraceRight) && !Check(state, TokenType.EOF))
+                Declaration(state);
+            Consume(state, TokenType.BraceRight, "EXpect '}' after block");
+        }
+
         static void ExpressionStatement(State state)
         {
             Expression(state);
@@ -396,6 +473,12 @@ namespace SpeedCalc.Core.Runtime
         {
             if (Match(state, TokenType.Print))
                 PrintStatement(state);
+            else if (Match(state, TokenType.BraceLeft))
+            {
+                BeginScope(state);
+                Block(state);
+                EndScope(state);
+            }
             else
                 ExpressionStatement(state);
         }
@@ -429,6 +512,7 @@ namespace SpeedCalc.Core.Runtime
             {
                 Scanner = new Scanner(source ?? throw new ArgumentNullException(nameof(source))),
                 CompilingChunk = chunk ?? throw new ArgumentNullException(nameof(chunk)),
+                Compiler = new Compiler(),
             };
 
             Advance(state);
