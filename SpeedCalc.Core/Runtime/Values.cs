@@ -3,9 +3,29 @@ using System.Globalization;
 
 namespace SpeedCalc.Core.Runtime
 {
-    public abstract class Value
+    public abstract class Value : IEquatable<Value>
     {
         public override sealed string ToString() => Values.ToString(this);
+
+        public override sealed bool Equals(object obj)
+        {
+            if (obj is null)
+                return false;
+
+            if (obj is Value other)
+                return Equals(other);
+            else
+                return false;
+        }
+
+        public bool Equals(Value other)
+        {
+            if (other is null)
+                return false;
+            return this.EqualsValue(other);
+        }
+
+        public abstract override int GetHashCode();
     }
 
     public static class Values
@@ -16,12 +36,16 @@ namespace SpeedCalc.Core.Runtime
         {
             public bool Value { get; }
 
+            public override int GetHashCode() => Value.GetHashCode();
+
             public BoolVal(bool value) => Value = value;
         }
 
         sealed class NumberVal : Value
         {
             public decimal Value { get; }
+
+            public override int GetHashCode() => Value.GetHashCode();
 
             public NumberVal(decimal value) => Value = value;
         }
@@ -30,12 +54,16 @@ namespace SpeedCalc.Core.Runtime
         {
             public string Value { get; }
 
+            public override int GetHashCode() => Value.GetHashCode();
+
             public StringVal(string value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         sealed class FunctionVal : Value
         {
             public object Value { get; }
+
+            public override int GetHashCode() => Value.GetHashCode();
 
             public FunctionVal(object value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
@@ -98,19 +126,14 @@ namespace SpeedCalc.Core.Runtime
             if (firstValue.GetType() != secondValue.GetType())
                 return false;
 
-            switch (firstValue)
+            return firstValue switch
             {
-                case BoolVal _:
-                    return firstValue.AsBool() == secondValue.AsBool();
-                case NumberVal _:
-                    return firstValue.AsNumber() == secondValue.AsNumber();
-                case StringVal _:
-                    return firstValue.AsString() == secondValue.AsString();
-                case FunctionVal _:
-                    return firstValue.AsFunction() == secondValue.AsFunction();
-            }
-
-            throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'");
+                BoolVal _ => firstValue.AsBool() == secondValue.AsBool(),
+                NumberVal _ => firstValue.AsNumber() == secondValue.AsNumber(),
+                StringVal _ => firstValue.AsString() == secondValue.AsString(),
+                FunctionVal _ => firstValue.AsFunction() == secondValue.AsFunction(),
+                _ => throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'"),
+            };
         }
 
         public static string ToString(this Value value)
@@ -118,19 +141,14 @@ namespace SpeedCalc.Core.Runtime
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            switch (value)
+            return value switch
             {
-                case BoolVal _:
-                    return value.AsBool() ? "true" : "false";
-                case NumberVal _:
-                    return value.AsNumber().ToString("G", CultureInfo.InvariantCulture);
-                case StringVal val:
-                    return val.Value;
-                case FunctionVal _:
-                    return "<function>";
-            }
-
-            throw new RuntimeException($"Unknown value type received: '{value.GetType()}'");
+                BoolVal _ => value.AsBool() ? "true" : "false",
+                NumberVal _ => value.AsNumber().ToString("G", CultureInfo.InvariantCulture),
+                StringVal val => val.Value,
+                FunctionVal _ => "<function>",
+                _ => throw new RuntimeException($"Unknown value type received: '{value.GetType()}'"),
+            };
         }
     }
 }

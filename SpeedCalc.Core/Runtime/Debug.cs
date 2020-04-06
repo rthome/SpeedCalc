@@ -19,10 +19,16 @@ namespace SpeedCalc.Core.Runtime
             {
                 case OpCode.Constant:
                 case OpCode.LoadGlobal:
-                case OpCode.DefineGlobal:
                 case OpCode.AssignGlobal:
+                case OpCode.DefineGlobal:
                     var constant = chunk.Code[offset + 1];
                     sb.Append($"{instr} {constant,4:D4} {chunk.Constants[constant]}");
+                    return (offset + 2, sb.ToString());
+
+                case OpCode.LoadLocal:
+                case OpCode.AssignLocal:
+                    var slot = chunk.Code[offset + 1];
+                    sb.Append($"{instr} {slot,4:D4}");
                     return (offset + 2, sb.ToString());
 
                 case OpCode.Nop:

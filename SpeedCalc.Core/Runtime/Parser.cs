@@ -42,7 +42,7 @@ namespace SpeedCalc.Core.Runtime
 
                 var index = LocalCount++;
                 Locals[index].Token = name;
-                Locals[index].Depth = ScopeDepth;
+                Locals[index].Depth = -1;
             }
         }
 
@@ -286,6 +286,20 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static int ResolveLocal(State state, Token name)
+        {
+            for (int i = state.Compiler.LocalCount - 1; i >= 0; i--)
+            {
+                if (state.Compiler.Locals[i].Token.Lexeme == name.Lexeme)
+                {
+                    if (state.Compiler.Locals[i].Depth == -1)
+                        Error(state, "Cannot read variable in its own initializer");
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         static byte IdentifierConstant(State state, Token name)
         {
             return MakeConstant(state, Values.String(name.Lexeme));
@@ -321,10 +335,15 @@ namespace SpeedCalc.Core.Runtime
             return IdentifierConstant(state, state.Previous);
         }
 
+        static void MarkInitialized(State state) => state.Compiler.Locals[state.Compiler.LocalCount - 1].Depth = state.Compiler.ScopeDepth;
+
         static void DefineVariable(State state, byte global)
         {
             if (state.Compiler.ScopeDepth > 0)
+            {
+                MarkInitialized(state);
                 return;
+            }
 
             Emit(state, OpCode.DefineGlobal, global);
         }
@@ -421,15 +440,27 @@ namespace SpeedCalc.Core.Runtime
 
         static void NamedVariable(State state, Token name, bool canAssign)
         {
-            var arg = IdentifierConstant(state, name);
+            OpCode get, set;
+            var arg = ResolveLocal(state, name);
+            if (arg != -1)
+            {
+                get = OpCode.LoadLocal;
+                set = OpCode.AssignLocal;
+            }
+            else
+            {
+                arg = IdentifierConstant(state, name);
+                get = OpCode.LoadGlobal;
+                set = OpCode.AssignGlobal;
+            }
 
             if (canAssign && Match(state, TokenType.Equal))
             {
                 Expression(state);
-                Emit(state, OpCode.AssignGlobal, arg);
+                Emit(state, set, (byte)arg);
             }
             else
-                Emit(state, OpCode.LoadGlobal, arg);
+                Emit(state, get, (byte)arg);
         }
 
         static void Variable(State state, bool canAssign)

@@ -66,10 +66,10 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Push(firstVal);
             vm.Push(secondVal);
 
-            Assert.True(vm.Peek(0).EqualsValue(secondVal));
-            Assert.True(vm.Peek(1).EqualsValue(firstVal));
-            Assert.True(vm.Pop().EqualsValue(secondVal));
-            Assert.True(vm.Pop().EqualsValue(firstVal));
+            Assert.Equal(vm.Peek(0), secondVal);
+            Assert.Equal(vm.Peek(1), firstVal);
+            Assert.Equal(vm.Pop(), secondVal);
+            Assert.Equal(vm.Pop(), firstVal);
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             vm.Interpret(chunk);
 
-            Assert.True(vm.Pop().Equals(constValue));
+            Assert.Equal(vm.Pop(), constValue);
         }
 
         [Fact]

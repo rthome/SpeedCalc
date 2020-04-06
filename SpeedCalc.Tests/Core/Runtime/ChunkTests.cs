@@ -65,8 +65,8 @@ namespace SpeedCalc.Tests.Core.Runtime
             chunk.AddConstant(Values.String("test"));
             chunk.AddConstant(Values.Bool(true));
 
-            Assert.True(chunk.Constants[0].EqualsValue(Values.String("test")));
-            Assert.True(chunk.Constants[1].EqualsValue(Values.Bool(true)));
+            Assert.Equal(Values.String("test"), chunk.Constants[0]);
+            Assert.Equal(Values.Bool(true), chunk.Constants[1]);
         }
 
         [Fact]

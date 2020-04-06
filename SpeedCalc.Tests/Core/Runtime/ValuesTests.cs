@@ -60,6 +60,25 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void ValueEqualMemberAndExtensionAreEquivalent()
+        {
+            Assert.Equal(Values.Bool(true).Equals(Values.Bool(true)), Values.Bool(true).EqualsValue(Values.Bool(true)));
+            Assert.Equal(Values.Number(123).Equals(Values.Number(123)), Values.Number(123).EqualsValue(Values.Number(123)));
+            Assert.Equal(Values.Number(123).Equals(Values.Bool(false)), Values.Number(123).EqualsValue(Values.Bool(false)));
+
+            Assert.Equal(Values.Number(123).Equals((object)Values.Bool(false)), Values.Number(123).EqualsValue(Values.Bool(false)));
+            Assert.Equal(Values.Bool(true).Equals((object)Values.Bool(true)), Values.Bool(true).EqualsValue(Values.Bool(true)));
+        }
+
+        [Fact]
+        public void ValuesDoNotEqualUnwrappedValues()
+        {
+            Assert.False(Values.Bool(true).Equals(null));
+            Assert.False(Values.Bool(true).Equals(true));
+            Assert.False(Values.String("test").Equals("test"));
+        }
+
+        [Fact]
         public void ValuesRetainTheValueTheyAreGiven()
         {
             Assert.True(Values.Bool(true).AsBool());
@@ -99,22 +118,22 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void BoolValueEquality()
         {
-            Assert.True(Values.Bool(true).EqualsValue(Values.Bool(true)));
-            Assert.True(Values.Bool(false).EqualsValue(Values.Bool(false)));
+            Assert.Equal(Values.Bool(true), Values.Bool(true));
+            Assert.Equal(Values.Bool(false), Values.Bool(false));
 
-            Assert.False(Values.Bool(true).EqualsValue(Values.Bool(false)));
-            Assert.False(Values.Bool(false).EqualsValue(Values.Bool(true)));
+            Assert.NotEqual(Values.Bool(true), Values.Bool(false));
+            Assert.NotEqual(Values.Bool(false), Values.Bool(true));
         }
 
         [Fact]
         public void NumberValueEquality()
         {
-            Assert.True(Values.Number(0m).EqualsValue(Values.Number(0m)));
-            Assert.True(Values.Number(1.2345m).EqualsValue(Values.Number(1.2345m)));
-            Assert.True(Values.Number(decimal.MaxValue).EqualsValue(Values.Number(decimal.MaxValue)));
-            Assert.True(Values.Number(decimal.MinValue).EqualsValue(Values.Number(decimal.MinValue)));
-            Assert.False(Values.Number(decimal.MinValue).EqualsValue(Values.Number(decimal.MaxValue)));
-            Assert.False(Values.Number(0m).EqualsValue(Values.Number(1m)));
+            Assert.Equal(Values.Number(0m), Values.Number(0m));
+            Assert.Equal(Values.Number(1.2345m), Values.Number(1.2345m));
+            Assert.Equal(Values.Number(decimal.MaxValue), Values.Number(decimal.MaxValue));
+            Assert.Equal(Values.Number(decimal.MinValue), Values.Number(decimal.MinValue));
+            Assert.NotEqual(Values.Number(decimal.MinValue), Values.Number(decimal.MaxValue));
+            Assert.NotEqual(Values.Number(0m), Values.Number(1m));
         }
 
         [Fact]
@@ -126,9 +145,9 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void ValuesOfDifferentTypesAreNotEqual()
         {
-            Assert.False(Values.Bool(true).EqualsValue(Values.String("")));
-            Assert.False(Values.Bool(true).EqualsValue(Values.Number(0m)));
-            Assert.False(Values.Bool(true).EqualsValue(Values.Function(new object())));
+            Assert.NotEqual(Values.Bool(true), Values.String(""));
+            Assert.NotEqual(Values.Bool(true), Values.Number(0m));
+            Assert.NotEqual(Values.Bool(true), Values.Function(new object()));
         }
     }
 }

@@ -1,18 +1,13 @@
 ﻿using SpeedCalc.Core.Runtime;
-using System;
+
 using System.IO;
+
 using Xunit;
 
 namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
-        void CompilesScript(string source)
-        {
-            var chunk = new Chunk();
-            Assert.True(Parser.Compile(source, chunk));
-        }
-
         void CompilerErrors(string source)
         {
             var chunk = new Chunk();
@@ -189,6 +184,39 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             var result = RunScriptAndCaptureOutput("var global = 1234; { var global = false; print global; }");
             Assert.Equal("false", result);
+        }
+
+        [Fact]
+        public void RunsLocalAssignedToGlobalPrint()
+        {
+            var result = RunScriptAndCaptureOutput("var global = true; { var local = 100; global = local; print global; }");
+            Assert.Equal("100", result);
+        }
+
+        [Fact]
+        public void RunsGlobalAssignedToLocalPrint()
+        {
+            var result = RunScriptAndCaptureOutput("var global = 100; { var local = global; print local; }");
+            Assert.Equal("100", result);
+        }
+
+        [Fact]
+        public void RunsAssignmentToSelf()
+        {
+            var result = RunScriptAndCaptureOutput("{ var a = 100; a = a; print a; }");
+            Assert.Equal("100", result);
+        }
+
+        [Fact]
+        public void ErrorsOnAssignmentFromOuterScope()
+        {
+            CompilerErrors("{ var a = 100; { var a = a; } }");
+        }
+
+        [Fact]
+        public void ErrorsOnDefiningLocalWithItself()
+        {
+            CompilerErrors("{ var a = a; }");
         }
     }
 }

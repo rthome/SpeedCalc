@@ -64,11 +64,10 @@ namespace SpeedCalc.Core.Runtime
                             Push(value);
                         }
                         break;
-                    case OpCode.DefineGlobal:
+                    case OpCode.LoadLocal:
                         {
-                            var globalName = ReadConstant().AsString();
-                            globals[globalName] = Peek();
-                            Pop();
+                            var slot = ReadByte();
+                            Push(stack[slot]);
                         }
                         break;
                     case OpCode.AssignGlobal:
@@ -77,6 +76,19 @@ namespace SpeedCalc.Core.Runtime
                             if (!globals.ContainsKey(name))
                                 throw new RuntimeExecutionException($"Undefined variable '{name}'");
                             globals[name] = Peek();
+                        }
+                        break;
+                    case OpCode.AssignLocal:
+                        {
+                            var slot = ReadByte();
+                            stack[slot] = Peek();
+                        }
+                        break;
+                    case OpCode.DefineGlobal:
+                        {
+                            var globalName = ReadConstant().AsString();
+                            globals[globalName] = Peek();
+                            Pop();
                         }
                         break;
                     case OpCode.Equal:

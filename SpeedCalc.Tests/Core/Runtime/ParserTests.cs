@@ -39,25 +39,41 @@ namespace SpeedCalc.Tests.Core.Runtime
 
                 public Seq Bool(bool value) => Instr(value ? OpCode.True : OpCode.False);
 
-                public Seq Const(OpCode opcode, Value constVal)
+                public Seq ConstInstr(OpCode opcode, Value constVal)
                 {
                     MakeOp(2, (current) =>
                     {
                         Assert.Equal(opcode, (OpCode)chunk.Code[current]);
-                        Assert.True(constVal.EqualsValue(chunk.Constants[chunk.Code[current + 1]]));
+                        Assert.Equal(constVal, chunk.Constants[chunk.Code[current + 1]]);
                     });
                     return this;
                 }
 
-                public Seq String(string value) => Const(OpCode.Constant, Values.String(value));
+                public Seq Constant(Value constVal) => ConstInstr(OpCode.Constant, constVal);
 
-                public Seq Number(decimal value) => Const(OpCode.Constant, Values.Number(value));
+                public Seq String(string value) => Constant(Values.String(value));
 
-                public Seq Global(string name) => Const(OpCode.DefineGlobal, Values.String(name));
+                public Seq Number(decimal value) => Constant(Values.Number(value));
 
-                public Seq LoadGlobal(string name) => Const(OpCode.LoadGlobal, Values.String(name));
+                public Seq Global(string name) => ConstInstr(OpCode.DefineGlobal, Values.String(name));
 
-                public Seq AssignGlobal(string name) => Const(OpCode.AssignGlobal, Values.String(name));
+                public Seq LoadGlobal(string name) => ConstInstr(OpCode.LoadGlobal, Values.String(name));
+
+                public Seq AssignGlobal(string name) => ConstInstr(OpCode.AssignGlobal, Values.String(name));
+
+                public Seq SlotInstr(OpCode opcode, int slot)
+                {
+                    MakeOp(2, (current) =>
+                    {
+                        Assert.Equal(opcode, (OpCode)chunk.Code[current]);
+                        Assert.Equal(slot, chunk.Code[current + 1]);
+                    });
+                    return this;
+                }
+
+                public Seq LoadLocal(int slot) => SlotInstr(OpCode.LoadLocal, slot);
+
+                public Seq AssignLocal(int slot) => SlotInstr(OpCode.AssignLocal, slot);
 
                 public void Test()
                 {
@@ -79,38 +95,38 @@ namespace SpeedCalc.Tests.Core.Runtime
             public static Seq Compile(string source, int initialOffset = 0, bool checkToEnd = true)
             {
                 var chunk = new Chunk();
-                Parser.Compile(source, chunk);
+                Assert.True(Parser.Compile(source, chunk));
                 return new Seq(chunk, initialOffset, checkToEnd);
             }
         }
 
         [Fact]
-        public void ParserCompilesNumberToConstant()
+        public void NumberToConstant()
         {
-            Code.Compile("100")
+            Code.Compile("100;")
                 .Number(100)
                 .Pop()
                 .Test();
         }
 
         [Fact]
-        public void ParserCompilesLiterals()
+        public void Literals()
         {
-            Code.Compile("true")
+            Code.Compile("true;")
                 .Bool(true)
                 .Pop()
                 .Test();
 
-            Code.Compile("false")
+            Code.Compile("false;")
                 .Bool(false)
                 .Pop()
                 .Test();
         }
 
         [Fact]
-        public void ParserCompilesNotExpr()
+        public void Not()
         {
-            Code.Compile("!true")
+            Code.Compile("!true;")
                 .Bool(true)
                 .Instr(OpCode.Not)
                 .Pop()
@@ -118,9 +134,9 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void ParserCompilesNegateExpr()
+        public void Negate()
         {
-            Code.Compile("-1")
+            Code.Compile("-1;")
                 .Number(1)
                 .Instr(OpCode.Negate)
                 .Pop()
@@ -128,7 +144,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void ParserCompilesPrintStmt()
+        public void Print()
         {
             Code.Compile("print 123;")
                 .Number(123)
@@ -137,7 +153,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void ParserCompilesGlobalDefinitionStmt()
+        public void GlobalDefinition()
         {
             Code.Compile("var Global = 100;")
                 .Number(100)
@@ -146,7 +162,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void ParserCompilesGlobalLoadStmt()
+        public void GlobalLoadStmt()
         {
             Code.Compile("var Value = 123; print Value;", initialOffset: 4)
                 .LoadGlobal("Value")
@@ -155,11 +171,85 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void ParserCompilesGlobalAssignStmt()
+        public void GlobalAssign()
         {
             Code.Compile("var Value = 123; Value = true;", initialOffset: 4)
                 .Bool(true)
                 .AssignGlobal("Value")
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalDefinition()
+        {
+            Code.Compile("{ var a = 1; }")
+                .Number(1)
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalPrint()
+        {
+            Code.Compile("{ var a = 1; print a; }")
+                .Number(1)
+                .LoadLocal(0)
+                .Print()
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalAssignFromArithmeticExpr()
+        {
+            Code.Compile("{ var a = 2 * (3 + 4 / 5**2); print a; }")
+                .Number(2)
+                .Number(3)
+                .Number(4)
+                .Number(5)
+                .Number(2)
+                .Instr(OpCode.Exp)
+                .Instr(OpCode.Divide)
+                .Instr(OpCode.Add)
+                .Instr(OpCode.Multiply)
+                .LoadLocal(0)
+                .Print()
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalAssignFromLocal()
+        {
+            Code.Compile("{ var a = 1; var b = a; }")
+                .Number(1)
+                .LoadLocal(0)
+                .Pop()
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalAssignFromGlobal()
+        {
+            Code.Compile("var g = true; { var a = g; }")
+                .Bool(true)
+                .Global("g")
+                .LoadGlobal("g")
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void LocalAssignFromLocalAndPrint()
+        {
+            Code.Compile("{ var a = 1; var b = a; print b; }")
+                .Number(1)
+                .LoadLocal(0)
+                .LoadLocal(1)
+                .Print()
+                .Pop()
                 .Pop()
                 .Test();
         }
