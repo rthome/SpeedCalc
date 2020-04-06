@@ -9,6 +9,7 @@ namespace SpeedCalc.Core.Runtime
         True,
         False,
         Pop,
+        PopN,
         LoadGlobal,
         LoadLocal,
         AssignGlobal,

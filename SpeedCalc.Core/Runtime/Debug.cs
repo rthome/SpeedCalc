@@ -25,6 +25,7 @@ namespace SpeedCalc.Core.Runtime
                     sb.Append($"{instr} {constant,4:D4} {chunk.Constants[constant]}");
                     return (offset + 2, sb.ToString());
 
+                case OpCode.PopN:
                 case OpCode.LoadLocal:
                 case OpCode.AssignLocal:
                     var slot = chunk.Code[offset + 1];

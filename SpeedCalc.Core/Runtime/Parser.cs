@@ -251,11 +251,15 @@ namespace SpeedCalc.Core.Runtime
         {
             state.Compiler.ScopeDepth--;
 
+            var originalLocalCount = state.Compiler.LocalCount;
             while (state.Compiler.LocalCount > 0 && state.Compiler.Locals[state.Compiler.LocalCount - 1].Depth > state.Compiler.ScopeDepth)
-            {
-                Emit(state, OpCode.Pop);
                 state.Compiler.LocalCount--;
-            }
+
+            var discardedLocals = originalLocalCount - state.Compiler.LocalCount;
+            if (discardedLocals == 1)
+                Emit(state, OpCode.Pop);
+            else if (discardedLocals > 1)
+                Emit(state, OpCode.PopN, (byte)discardedLocals);
         }
 
         #endregion

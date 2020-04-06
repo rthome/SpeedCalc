@@ -29,7 +29,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
                 public Seq Instr(OpCode opcode)
                 {
-                    MakeOp(1, (current) => Assert.Equal(opcode, (OpCode)chunk.Code[current]));
+                    MakeOp(1, (current) => Assert.Equal((current, opcode), (current, (OpCode)chunk.Code[current])));
                     return this;
                 }
 
@@ -41,11 +41,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
                 public Seq ConstInstr(OpCode opcode, Value constVal)
                 {
-                    MakeOp(2, (current) =>
-                    {
-                        Assert.Equal(opcode, (OpCode)chunk.Code[current]);
-                        Assert.Equal(constVal, chunk.Constants[chunk.Code[current + 1]]);
-                    });
+                    MakeOp(2, (current) => Assert.Equal((current, opcode, constVal), (current, (OpCode)chunk.Code[current], chunk.Constants[chunk.Code[current + 1]])));
                     return this;
                 }
 
@@ -61,19 +57,17 @@ namespace SpeedCalc.Tests.Core.Runtime
 
                 public Seq AssignGlobal(string name) => ConstInstr(OpCode.AssignGlobal, Values.String(name));
 
-                public Seq SlotInstr(OpCode opcode, int slot)
+                public Seq ArgInstr(OpCode opcode, byte arg)
                 {
-                    MakeOp(2, (current) =>
-                    {
-                        Assert.Equal(opcode, (OpCode)chunk.Code[current]);
-                        Assert.Equal(slot, chunk.Code[current + 1]);
-                    });
+                    MakeOp(2, (current) => Assert.Equal((current, opcode, arg), (current, (OpCode)chunk.Code[current], chunk.Code[current + 1])));
                     return this;
                 }
 
-                public Seq LoadLocal(int slot) => SlotInstr(OpCode.LoadLocal, slot);
+                public Seq PopN(byte count) => ArgInstr(OpCode.PopN, count);
 
-                public Seq AssignLocal(int slot) => SlotInstr(OpCode.AssignLocal, slot);
+                public Seq LoadLocal(byte slot) => ArgInstr(OpCode.LoadLocal, slot);
+
+                public Seq AssignLocal(byte slot) => ArgInstr(OpCode.AssignLocal, slot);
 
                 public void Test()
                 {
@@ -225,8 +219,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             Code.Compile("{ var a = 1; var b = a; }")
                 .Number(1)
                 .LoadLocal(0)
-                .Pop()
-                .Pop()
+                .PopN(2)
                 .Test();
         }
 
@@ -249,8 +242,7 @@ namespace SpeedCalc.Tests.Core.Runtime
                 .LoadLocal(0)
                 .LoadLocal(1)
                 .Print()
-                .Pop()
-                .Pop()
+                .PopN(2)
                 .Test();
         }
     }
