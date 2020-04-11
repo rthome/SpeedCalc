@@ -91,6 +91,7 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     null,   Precedence.None),       // BraceRight
             new Rule(null,     null,   Precedence.None),       // Comma
             new Rule(null,     null,   Precedence.None),       // Dot
+            new Rule(null,     null,   Precedence.None),       // Colon
             new Rule(null,     null,   Precedence.None),       // Semicolon
             new Rule(Unary,    Binary, Precedence.Term),       // Minus
             new Rule(null,     Binary, Precedence.Term),       // Plus
@@ -230,6 +231,24 @@ namespace SpeedCalc.Core.Runtime
         static void EmitReturn(State state) => Emit(state, OpCode.Return);
 
         static void EmitConstant(State state, Value value) => Emit(state, OpCode.Constant, MakeConstant(state, value));
+
+        static int EmitJump(State state, OpCode value)
+        {
+            Emit(state, value);
+            Emit(state, 0xff);
+            Emit(state, 0xff);
+            return state.CompilingChunk.Code.Count - 2;
+        }
+
+        static void PatchJump(State state, int offset)
+        {
+            var jump = state.CompilingChunk.Code.Count - offset - 2;
+            if (jump > ushort.MaxValue)
+                Error(state, "Too much code to jump over");
+
+            state.CompilingChunk.Code[offset] = (byte)((jump >> 8) & 0xff);
+            state.CompilingChunk.Code[offset + 1] = (byte)(jump & 0xff);
+        }
 
         static void EndCompile(State state)
         {
@@ -497,6 +516,28 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.Pop);
         }
 
+        static void IfStatement(State state)
+        {
+            Expression(state);
+            Consume(state, TokenType.Colon, "Expect ':' after condition");
+
+            var thenJump = EmitJump(state, OpCode.JumpIfFalse);
+            Emit(state, OpCode.Pop);
+            Statement(state);
+            var elseJump = EmitJump(state, OpCode.Jump);
+
+            PatchJump(state, thenJump);
+            Emit(state, OpCode.Pop);
+
+            if (Match(state, TokenType.Else))
+            {
+                Consume(state, TokenType.Colon, "Expect ':' after else");
+                Statement(state);
+            }
+
+            PatchJump(state, elseJump);
+        }
+
         static void PrintStatement(State state)
         {
             Expression(state);
@@ -508,6 +549,8 @@ namespace SpeedCalc.Core.Runtime
         {
             if (Match(state, TokenType.Print))
                 PrintStatement(state);
+            else if (Match(state, TokenType.If))
+                IfStatement(state);
             else if (Match(state, TokenType.BraceLeft))
             {
                 BeginScope(state);

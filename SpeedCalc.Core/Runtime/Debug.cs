@@ -32,6 +32,13 @@ namespace SpeedCalc.Core.Runtime
                     sb.Append($"{instr} {slot,4:D4}");
                     return (offset + 2, sb.ToString());
 
+                case OpCode.Jump:
+                case OpCode.JumpIfFalse:
+                    var jump = (ushort)(chunk.Code[offset + 1] << 8);
+                    jump |= chunk.Code[offset + 2];
+                    sb.Append($"{instr} {offset,4:D4} -> {(offset + 3) + jump,4:D4}");
+                    return (offset + 3, sb.ToString());
+
                 case OpCode.Nop:
                 case OpCode.True:
                 case OpCode.False:

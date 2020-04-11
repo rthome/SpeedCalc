@@ -38,73 +38,62 @@ namespace SpeedCalc.Tests.Core.Runtime
             return writer.ToString().TrimEnd('\r', '\n');
         }
 
+        void RunScriptAndExpect(string expectedResult, string source) => Assert.Equal(expectedResult, RunScriptAndCaptureOutput(source));
+
         [Fact]
         public void RunsSingleNumberExpr()
         {
-            var result = RunScriptAndCaptureOutput("print 1024;");
-            Assert.Equal("1024", result);
+            RunScriptAndExpect("1024", "print 1024;");
         }
 
         [Fact]
         public void RunsSingleBoolExprs()
         {
-            var trueResult = RunScriptAndCaptureOutput("print true;");
-            Assert.Equal("true", trueResult);
-
-            var falseResult = RunScriptAndCaptureOutput("print false;");
-            Assert.Equal("false", falseResult);
+            RunScriptAndExpect("true", "print true;");
+            RunScriptAndExpect("false", "print false;");
         }
 
         [Fact]
         public void RunsAddExpr()
         {
-            var result0 = RunScriptAndCaptureOutput("print 10 + 1;");
-            Assert.Equal("11", result0);
-
-            var result1 = RunScriptAndCaptureOutput("print 0.5 + 1.5;");
-            Assert.Equal("2", result1);
+            RunScriptAndExpect("11", "print 10 + 1;");
+            RunScriptAndExpect("2.0", "print 0.5 + 1.5;");
         }
 
         [Fact]
         public void RunsTwoAddExprs()
         {
-            var result = RunScriptAndCaptureOutput("print 1+2+3;");
-            Assert.Equal("6", result);
+            RunScriptAndExpect("6", "print 1+2+3;");
         }
 
         [Fact]
         public void RunsMultipleAddExprs()
         {
-            var result = RunScriptAndCaptureOutput("print 1+2+3+4+5+6+7+8+9+8+7+6+5+4+3+2+1;");
-            Assert.Equal("81", result);
+            RunScriptAndExpect("81", "print 1+2+3+4+5+6+7+8+9+8+7+6+5+4+3+2+1;");
         }
 
         [Fact]
         public void RunsGroupedAddAndMulExpr()
         {
-            var result = RunScriptAndCaptureOutput("print (2+3)+(2*3);");
-            Assert.Equal("11", result);
+            RunScriptAndExpect("11", "print (2+3)+(2*3);");
         }
 
         [Fact]
         public void RunsSubtractExpr()
         {
-            var result = RunScriptAndCaptureOutput("print 7000 - 1;");
-            Assert.Equal("6999", result);
+            RunScriptAndExpect("6999", "print 7000 - 1;");
         }
 
         [Fact]
         public void RunsDivisionExpr()
         {
-            var result = RunScriptAndCaptureOutput("print 10/2;");
-            Assert.Equal("5", result);
+            RunScriptAndExpect("5", "print 10/2;");
         }
 
         [Fact]
         public void RunsExponentiationExpr()
         {
-            var result = RunScriptAndCaptureOutput("print 5**2;");
-            Assert.Equal("25", result);
+            RunScriptAndExpect("25", "print 5**2;");
         }
 
         [Fact]
@@ -135,15 +124,13 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsGlobalLookupStmt()
         {
-            var result = RunScriptAndCaptureOutput("var SomeGlobal = 1; print SomeGlobal;");
-            Assert.Equal("1", result);
+            RunScriptAndExpect("1", "var SomeGlobal = 1; print SomeGlobal;");
         }
-        
+
         [Fact]
         public void RunsGlobalAssignmentStmts()
         {
-            var result = RunScriptAndCaptureOutput("var A = 1; var B = 2; var A = A + B; print A;");
-            Assert.Equal("3", result);
+            RunScriptAndExpect("3", "var A = 1; var B = 2; var A = A + B; print A;");
         }
 
         [Fact]
@@ -155,15 +142,13 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsPrintLocal()
         {
-            var result = RunScriptAndCaptureOutput("{ var a = 1; print a; }");
-            Assert.Equal("1", result);
+            RunScriptAndExpect("1", "{ var a = 1; print a; }");
         }
 
         [Fact]
         public void RunsAddLocals()
         {
-            var result = RunScriptAndCaptureOutput("{ var a = 1; var b = 2; print a + b; }");
-            Assert.Equal("3", result);
+            RunScriptAndExpect("3", "{ var a = 1; var b = 2; print a + b; }");
         }
 
         [Fact]
@@ -175,36 +160,31 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsShadowedLocalPrint()
         {
-            var result = RunScriptAndCaptureOutput("{ var a = 1; { var a = true; print a; } }");
-            Assert.Equal("true", result);
+            RunScriptAndExpect("true", "{ var a = 1; { var a = true; print a; } }");
         }
 
         [Fact]
         public void RunsLocalShadowingGlobalPrint()
         {
-            var result = RunScriptAndCaptureOutput("var global = 1234; { var global = false; print global; }");
-            Assert.Equal("false", result);
+            RunScriptAndExpect("false", "var global = 1234; { var global = false; print global; }");
         }
 
         [Fact]
         public void RunsLocalAssignedToGlobalPrint()
         {
-            var result = RunScriptAndCaptureOutput("var global = true; { var local = 100; global = local; print global; }");
-            Assert.Equal("100", result);
+            RunScriptAndExpect("100", "var global = true; { var local = 100; global = local; print global; }");
         }
 
         [Fact]
         public void RunsGlobalAssignedToLocalPrint()
         {
-            var result = RunScriptAndCaptureOutput("var global = 100; { var local = global; print local; }");
-            Assert.Equal("100", result);
+            RunScriptAndExpect("100", "var global = 100; { var local = global; print local; }");
         }
 
         [Fact]
         public void RunsAssignmentToSelf()
         {
-            var result = RunScriptAndCaptureOutput("{ var a = 100; a = a; print a; }");
-            Assert.Equal("100", result);
+            RunScriptAndExpect("100", "{ var a = 100; a = a; print a; }");
         }
 
         [Fact]
@@ -217,6 +197,54 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void ErrorsOnDefiningLocalWithItself()
         {
             CompilerErrors("{ var a = a; }");
+        }
+
+        [Fact]
+        public void RunsIf()
+        {
+            RunScriptAndExpect("true", "if true: print true;");
+        }
+
+        [Fact]
+        public void RunsIfWithComparisonCond()
+        {
+            RunScriptAndExpect("1", "if 1+1 > 1: print 1;");
+        }
+
+        [Fact]
+        public void RunsIfWithEqualityCond()
+        {
+            RunScriptAndExpect("1", "if 2*2*2 == 8: print 1;");
+        }
+
+        [Fact]
+        public void RunsIfDoesNotRunWhenCondIsFalse()
+        {
+            RunScriptAndExpect("2", "if false: print 1; print 2;");
+        }
+
+        [Fact]
+        public void RunsIfWithBlock()
+        {
+            RunScriptAndExpect("1", "if true: { var a = 1; print a; }");
+        }
+
+        [Fact]
+        public void RunsIfWithElse()
+        {
+            RunScriptAndExpect("true", "if true: print true; else: print false;");
+        }
+
+        [Fact]
+        public void RunsElse()
+        {
+            RunScriptAndExpect("false", "if false: print true; else: print false;");
+        }
+
+        [Fact]
+        public void RunsElseWithBlock()
+        {
+            RunScriptAndExpect("2", "if false: { var a = 1; print a; } else: { var a = 2; print a; }");
         }
     }
 }

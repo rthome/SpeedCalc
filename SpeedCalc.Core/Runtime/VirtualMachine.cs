@@ -20,6 +20,7 @@ namespace SpeedCalc.Core.Runtime
         void Run()
         {
             byte ReadByte() => executingChunk.Code[ipOffset++];
+            ushort ReadShort() { ipOffset += 2; return (ushort)(executingChunk.Code[ipOffset - 2] << 8 | executingChunk.Code[ipOffset - 1]); };
             Value ReadConstant() => executingChunk.Constants[ReadByte()];
 
             void BinaryOp(Func<decimal, decimal, Value> op)
@@ -55,6 +56,9 @@ namespace SpeedCalc.Core.Runtime
                         break;
                     case OpCode.Pop:
                         Pop();
+                        break;
+                    case OpCode.PopN:
+                        PopN(ReadByte());
                         break;
                     case OpCode.LoadGlobal:
                         {
@@ -136,8 +140,24 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Print:
                         StdOut.WriteLine(Pop().ToString());
                         break;
+                    case OpCode.Jump:
+                        {
+                            var offset = ReadShort();
+                            ipOffset += offset;
+                        }
+                        break;
+                    case OpCode.JumpIfFalse:
+                        {
+                            var offset = ReadShort();
+                            if (IsFalsey(Peek()))
+                                ipOffset += offset;
+                        }
+                        break;
                     case OpCode.Return:
                         return;
+
+                    default:
+                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {ipOffset}");
                 }
             }
         }
@@ -171,6 +191,13 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack");
 
             return stack[stackTopOffset];
+        }
+
+        public void PopN(int count)
+        {
+            stackTopOffset -= count;
+            if (stackTopOffset < 0)
+                throw new RuntimeExecutionException("Attempt to pop off of empty stack");
         }
 
         public Value Peek(int distance = 0)

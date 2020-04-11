@@ -26,6 +26,8 @@ namespace SpeedCalc.Core.Runtime
         Not,
         Negate,
         Print,
+        Jump,
+        JumpIfFalse,
         Return,
     };
 

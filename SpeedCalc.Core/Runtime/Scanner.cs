@@ -149,6 +149,7 @@
                         return Number();
                     else
                         return MakeToken(TokenType.Dot);
+                case ':': return MakeToken(TokenType.Colon);
                 case ';': return MakeToken(TokenType.Semicolon);
                 case '-': return MakeToken(TokenType.Minus);
                 case '+': return MakeToken(TokenType.Plus);

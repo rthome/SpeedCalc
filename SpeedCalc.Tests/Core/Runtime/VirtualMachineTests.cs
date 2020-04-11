@@ -73,6 +73,23 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void PopNPopsCorrectAmount()
+        {
+            var vm = new VirtualMachine();
+
+            var first = Values.Number(1);
+            var second = Values.Number(1);
+            var third = Values.Number(1);
+
+            vm.Push(first);
+            vm.Push(second);
+            vm.Push(third);
+
+            vm.PopN(2);
+            Assert.Equal(first, vm.Pop());
+        }
+
+        [Fact]
         public void MachineThrowsOnNullChunk()
         {
             var vm = new VirtualMachine();

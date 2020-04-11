@@ -64,6 +64,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData("}", BraceRight)]
         [InlineData(",", Comma)]
         [InlineData(".", Dot)]
+        [InlineData(":", Colon)]
         [InlineData(";", Semicolon)]
         [InlineData("(", ParenLeft)]
         [InlineData(")", ParenRight)]

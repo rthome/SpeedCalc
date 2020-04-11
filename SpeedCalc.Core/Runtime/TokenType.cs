@@ -12,6 +12,7 @@
         BraceRight,
         Comma,
         Dot,
+        Colon,
         Semicolon,
         Minus,
         Plus,
