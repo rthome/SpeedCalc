@@ -8,13 +8,13 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
-        void CompilerErrors(string source)
+        static void CompilerErrors(string source)
         {
             var chunk = new Chunk();
             Assert.False(Parser.Compile(source, chunk));
         }
 
-        void RunScript(string source)
+        static void RunScript(string source)
         {
             var chunk = new Chunk();
             Assert.True(Parser.Compile(source, chunk));
@@ -23,7 +23,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Interpret(chunk);
         }
 
-        string RunScriptAndCaptureOutput(string source)
+        static string RunScriptAndCaptureOutput(string source)
         {
             var chunk = new Chunk();
             Assert.True(Parser.Compile(source, chunk));
@@ -38,7 +38,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             return writer.ToString().TrimEnd('\r', '\n');
         }
 
-        void RunScriptAndExpect(string expectedResult, string source) => Assert.Equal(expectedResult, RunScriptAndCaptureOutput(source));
+        static void RunScriptAndExpect(string expectedResult, string source) => Assert.Equal(expectedResult, RunScriptAndCaptureOutput(source));
 
         [Fact]
         public void RunsSingleNumberExpr()

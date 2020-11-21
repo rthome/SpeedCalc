@@ -28,7 +28,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             }
         }
 
-        void ScanSingleToken(string lexeme, TokenType expectedType)
+        static void ScanSingleToken(string lexeme, TokenType expectedType)
         {
             IEnumerable<string> WhitespaceLexeme()
             {
