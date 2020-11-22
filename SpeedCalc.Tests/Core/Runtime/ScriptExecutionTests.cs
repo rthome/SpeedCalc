@@ -246,5 +246,41 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             RunScriptAndExpect("2", "if false: { var a = 1; print a; } else: { var a = 2; print a; }");
         }
+
+        [Fact]
+        public void RunsAnd()
+        {
+            RunScriptAndExpect("false", "print false and false;");
+            RunScriptAndExpect("false", "print true and false;");
+            RunScriptAndExpect("false", "print false and true;");
+            RunScriptAndExpect("true", "print true and true;");
+        }
+
+        [Fact]
+        public void RunsNestedAnd()
+        {
+            RunScriptAndExpect("false", "print true and true and false;");
+            RunScriptAndExpect("false", "print false and true and false;");
+            RunScriptAndExpect("true", "print true and true and true;");
+        }
+
+        [Fact]
+        public void RunsIfWithTrueAnd()
+        {
+            RunScriptAndExpect("true", "if 1 and 2: print true; else: print false;");
+        }
+
+        [Fact]
+        public void RunsIfWithFalseAnd()
+        {
+            RunScriptAndExpect("false", "if true and false: print true; else: print false;");
+            RunScriptAndExpect("false", "if false and true: print true; else: print false;");
+        }
+
+        [Fact]
+        public void RunsIfWithAndVariables()
+        {
+            RunScriptAndExpect("true", "var c1 = 1000; var c2 = true; if c1 and c2: print true; else: print false;");
+        }
     }
 }

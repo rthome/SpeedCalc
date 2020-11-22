@@ -108,7 +108,7 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     Binary, Precedence.Exponent),   // StarStar
             new Rule(Variable, null,   Precedence.None),       // Identifier
             new Rule(Number,   null,   Precedence.None),       // Number
-            new Rule(null,     null,   Precedence.None),       // And
+            new Rule(null,     And,    Precedence.And),        // And
             new Rule(null,     null,   Precedence.None),       // Else
             new Rule(Literal,  null,   Precedence.None),       // False
             new Rule(null,     null,   Precedence.None),       // Fn,
@@ -369,6 +369,16 @@ namespace SpeedCalc.Core.Runtime
             }
 
             Emit(state, OpCode.DefineGlobal, global);
+        }
+
+        static void And(State state, bool canAssign)
+        {
+            var endJump = EmitJump(state, OpCode.JumpIfFalse);
+
+            Emit(state, OpCode.Pop);
+            ParsePrecedence(state, Precedence.And);
+
+            PatchJump(state, endJump);
         }
 
         static void Number(State state, bool canAssign)

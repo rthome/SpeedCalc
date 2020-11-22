@@ -2,8 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 using Xunit;
+
+using Debug = SpeedCalc.Core.Runtime.Debug;
 
 namespace SpeedCalc.Tests.Core.Runtime
 {
@@ -102,6 +107,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             {
                 var chunk = new Chunk();
                 Assert.True(Parser.Compile(source, chunk));
+                System.Diagnostics.Debug.WriteLineIf(Debugger.IsAttached, Debug.DisassembleChunk(chunk)
+                    .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line), sb => sb.ToString()));
+
                 return new Seq(chunk, initialOffset, checkToEnd);
             }
         }
@@ -297,6 +305,23 @@ namespace SpeedCalc.Tests.Core.Runtime
                 .Pop()
                 .Number(2)
                 .Print()
+                .Test();
+        }
+
+        [Fact]
+        public void AndWithTrueAndFalse()
+        {
+            Code.Compile("if true and false: print 1;")
+                .Bool(true)
+                .JumpIfFalse(2)
+                .Pop()
+                .Bool(false)
+                .JumpIfFalse(7)
+                .Pop()
+                .Number(1)
+                .Print()
+                .Jump(1)
+                .Pop()
                 .Test();
         }
     }
