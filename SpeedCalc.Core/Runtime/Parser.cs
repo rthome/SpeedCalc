@@ -114,7 +114,7 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     null,   Precedence.None),       // Fn,
             new Rule(null,     null,   Precedence.None),       // For
             new Rule(null,     null,   Precedence.None),       // If
-            new Rule(null,     null,   Precedence.None),       // Or
+            new Rule(null,     Or,     Precedence.Or),         // Or
             new Rule(null,     null,   Precedence.None),       // Print
             new Rule(null,     null,   Precedence.None),       // Return
             new Rule(Literal,  null,   Precedence.None),       // True
@@ -378,6 +378,18 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.Pop);
             ParsePrecedence(state, Precedence.And);
 
+            PatchJump(state, endJump);
+        }
+
+        static void Or(State state, bool canAssign)
+        {
+            var elseJump = EmitJump(state, OpCode.JumpIfFalse);
+            var endJump = EmitJump(state, OpCode.Jump);
+
+            PatchJump(state, elseJump);
+            Emit(state, OpCode.Pop);
+
+            ParsePrecedence(state, Precedence.Or);
             PatchJump(state, endJump);
         }
 

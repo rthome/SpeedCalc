@@ -265,6 +265,31 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void RunsOr()
+        {
+            RunScriptAndExpect("false", "print false or false;");
+            RunScriptAndExpect("true", "print true or false;");
+            RunScriptAndExpect("true", "print false or true;");
+            RunScriptAndExpect("true", "print true or true;");
+        }
+
+        [Fact]
+        public void RunsNestedOr()
+        {
+            RunScriptAndExpect("true", "print true or true or false;");
+            RunScriptAndExpect("true", "print false or true or false;");
+            RunScriptAndExpect("true", "print true or true or true;");
+            RunScriptAndExpect("false", "print false or false or false;");
+        }
+
+        [Fact]
+        public void RunsAndWithOr() // 'and' has higher precedence
+        {
+            RunScriptAndExpect("false", "print false or true and false;"); 
+            RunScriptAndExpect("true", "print 1 and true or false;");
+        }
+
+        [Fact]
         public void RunsIfWithTrueAnd()
         {
             RunScriptAndExpect("true", "if 1 and 2: print true; else: print false;");

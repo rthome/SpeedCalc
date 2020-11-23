@@ -324,5 +324,44 @@ namespace SpeedCalc.Tests.Core.Runtime
                 .Pop()
                 .Test();
         }
+
+        [Fact]
+        public void OrWithFalseAndTrueAndFalse()
+        {
+            Code.Compile("if false or true or false: print 1;")
+                .Bool(false)
+                .JumpIfFalse(3)
+                .Jump(10)
+                .Pop()
+                .Bool(true)
+                .JumpIfFalse(3)
+                .Jump(2)
+                .Pop()
+                .Bool(false)
+                .JumpIfFalse(7)
+                .Pop()
+                .Number(1)
+                .Print()
+                .Jump(1)
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void OrWithAssignmentFromThreeBools()
+        {
+            Code.Compile("{ var a = false or false or true; }")
+                .Bool(false)
+                .JumpIfFalse(3)
+                .Jump(10)
+                .Pop()
+                .Bool(false)
+                .JumpIfFalse(3)
+                .Jump(2)
+                .Pop()
+                .Bool(true)
+                .Pop()
+                .Test();
+        }
     }
 }
