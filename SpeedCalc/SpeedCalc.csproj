@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <StartupObject>SpeedCalc.App</StartupObject>
     <Authors>Raffael Thome</Authors>
-    <Copyright>Copyright © Raffael Thome 2019</Copyright>
+    <Copyright>Copyright © Raffael Thome 2019-2021</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/rthome/SpeedCalc</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rthome/SpeedCalc.git</RepositoryUrl>
@@ -17,10 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ReactiveUI" Version="12.1.5" />
-    <PackageReference Include="ReactiveUI.Events.WPF" Version="12.1.5" />
-    <PackageReference Include="ReactiveUI.WPF" Version="12.1.5" />
-    <PackageReference Include="Splat" Version="9.7.1" />
+    <PackageReference Include="ReactiveUI" Version="13.1.1" />
+    <PackageReference Include="ReactiveUI.Events.WPF" Version="13.1.1" />
+    <PackageReference Include="ReactiveUI.WPF" Version="13.1.1" />
+    <PackageReference Include="Splat" Version="10.0.1" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
 
