@@ -153,6 +153,12 @@ namespace SpeedCalc.Core.Runtime
                                 ipOffset += offset;
                         }
                         break;
+                    case OpCode.Loop:
+                        {
+                            var offset = ReadShort();
+                            ipOffset -= offset;
+                        }
+                        break;
                     case OpCode.Return:
                         return;
 

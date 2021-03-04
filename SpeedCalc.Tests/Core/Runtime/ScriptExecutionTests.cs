@@ -307,5 +307,54 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             RunScriptAndExpect("true", "var c1 = 1000; var c2 = true; if c1 and c2: print true; else: print false;");
         }
+
+        [Fact]
+        public void RunsWhileLoopWithAddition()
+        {
+            const string Script = @"var s = 0;
+                                    while s < 10:
+                                        s = s + 1;
+                                    print s;";
+
+            RunScriptAndExpect("10", Script);
+        }
+
+        [Fact]
+        public void RunsWhileLoopWithModifyingBoolCondition()
+        {
+            const string Script = @"var s = false;
+                                    while !s:
+                                        s = true;
+                                    print s;";
+
+            RunScriptAndExpect("true", Script);
+        }
+
+        [Fact]
+        public void RunsWhileLoopWithRepeatedPrint()
+        {
+            const string Script = @"var s = 10;
+                                    while s > 0:
+                                    {
+                                        s = s - 1;
+                                        print 1;
+                                    }";
+
+            RunScriptAndExpect("1\r\n1\r\n1\r\n1\r\n1\r\n1\r\n1\r\n1\r\n1\r\n1", Script);
+        }
+
+        [Fact]
+        public void RunsWhileWithIfInBody()
+        {
+            const string Script = @"var s = 10;
+                                    while s > 0:
+                                    {
+                                        s = s - 1;
+                                        if s == 3:
+                                            print 333;
+                                    }";
+
+            RunScriptAndExpect("333", Script);
+        }
     }
 }

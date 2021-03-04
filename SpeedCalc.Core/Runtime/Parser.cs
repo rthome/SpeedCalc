@@ -240,6 +240,18 @@ namespace SpeedCalc.Core.Runtime
             return state.CompilingChunk.Code.Count - 2;
         }
 
+        static void EmitLoop(State state, int loopStart)
+        {
+            Emit(state, OpCode.Loop);
+
+            var offset = state.CompilingChunk.Code.Count - loopStart + 2;
+            if (offset > ushort.MaxValue)
+                Error(state, "Loop body too large");
+
+            Emit(state, (byte)((offset >> 8) & 0xff));
+            Emit(state, (byte)(offset & 0xff));
+        }
+
         static void PatchJump(State state, int offset)
         {
             var jump = state.CompilingChunk.Code.Count - offset - 2;
@@ -567,12 +579,32 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.Print);
         }
 
+        static void WhileStatement(State state)
+        {
+            var loopStart = state.CompilingChunk.Code.Count;
+
+            Expression(state);
+            Consume(state, TokenType.Colon, "Expect ':' after condition");
+
+            var exitJump = EmitJump(state, OpCode.JumpIfFalse);
+
+            Emit(state, OpCode.Pop);
+            Statement(state);
+
+            EmitLoop(state, loopStart);
+
+            PatchJump(state, exitJump);
+            Emit(state, OpCode.Pop);
+        }
+
         static void Statement(State state)
         {
             if (Match(state, TokenType.Print))
                 PrintStatement(state);
             else if (Match(state, TokenType.If))
                 IfStatement(state);
+            else if (Match(state, TokenType.While))
+                WhileStatement(state);
             else if (Match(state, TokenType.BraceLeft))
             {
                 BeginScope(state);

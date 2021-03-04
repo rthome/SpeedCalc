@@ -34,9 +34,13 @@ namespace SpeedCalc.Core.Runtime
 
                 case OpCode.Jump:
                 case OpCode.JumpIfFalse:
+                case OpCode.Loop:
                     var jump = (ushort)(chunk.Code[offset + 1] << 8);
                     jump |= chunk.Code[offset + 2];
-                    sb.Append($"{instr} {offset,4:D4} -> {(offset + 3) + jump,4:D4}");
+                    if (instr == OpCode.Loop)
+                        sb.Append($"{instr} {offset,4:D4} -> {(offset + 3) - jump,4:D4}");
+                    else
+                        sb.Append($"{instr} {offset,4:D4} -> {(offset + 3) + jump,4:D4}");
                     return (offset + 3, sb.ToString());
 
                 case OpCode.Nop:

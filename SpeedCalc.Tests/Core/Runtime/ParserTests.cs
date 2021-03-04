@@ -86,6 +86,8 @@ namespace SpeedCalc.Tests.Core.Runtime
 
                 public Seq Jump(int offset) => OffsetInstr(OpCode.Jump, offset);
 
+                public Seq Loop(int offset) => OffsetInstr(OpCode.Loop, offset);
+
                 public void Test()
                 {
                     if (toEnd)
@@ -360,6 +362,39 @@ namespace SpeedCalc.Tests.Core.Runtime
                 .Jump(2)
                 .Pop()
                 .Bool(true)
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void SimpleWhileLoop()
+        {
+            Code.Compile("while true: {}")
+                .Bool(true)
+                .JumpIfFalse(4)
+                .Pop()
+                .Loop(8)
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
+        public void IncrementingWhileLoop()
+        {
+            Code.Compile("{ var c = 0; while c < 10: c = c + 1; }")
+                .Constant(Values.Number(0))
+                .LoadLocal(0)
+                .Constant(Values.Number(10))
+                .Instr(OpCode.Less)
+                .JumpIfFalse(12)
+                .Pop()
+                .LoadLocal(0)
+                .Constant(Values.Number(1))
+                .Instr(OpCode.Add)
+                .AssignLocal(0)
+                .Pop()
+                .Loop(20)
+                .Pop()
                 .Pop()
                 .Test();
         }

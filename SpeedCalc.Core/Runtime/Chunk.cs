@@ -28,6 +28,7 @@ namespace SpeedCalc.Core.Runtime
         Print,
         Jump,
         JumpIfFalse,
+        Loop,
         Return,
     };
 
