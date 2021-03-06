@@ -119,6 +119,7 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     null,   Precedence.None),       // Fn,
             new Rule(null,     null,   Precedence.None),       // For
             new Rule(null,     null,   Precedence.None),       // If
+            new Rule(null,     Binary, Precedence.Factor),     // Mod
             new Rule(null,     Or,     Precedence.Or),         // Or
             new Rule(null,     null,   Precedence.None),       // Print
             new Rule(null,     null,   Precedence.None),       // Return
@@ -482,6 +483,9 @@ namespace SpeedCalc.Core.Runtime
                     break;
                 case TokenType.StarStar:
                     Emit(state, OpCode.Exp);
+                    break;
+                case TokenType.Mod:
+                    Emit(state, OpCode.Modulo);
                     break;
 
                 default:

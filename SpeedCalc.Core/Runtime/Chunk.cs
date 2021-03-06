@@ -23,6 +23,7 @@ namespace SpeedCalc.Core.Runtime
         Multiply,
         Divide,
         Exp,
+        Modulo,
         Not,
         Negate,
         Print,

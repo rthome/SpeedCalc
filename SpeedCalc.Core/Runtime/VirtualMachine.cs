@@ -124,6 +124,9 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Exp:
                         BinaryOp((a, b) => Values.Number((decimal)Math.Pow((double)a, (double)b)));
                         break;
+                    case OpCode.Modulo:
+                        BinaryOp((a, b) => Values.Number(decimal.Remainder(a, b)));
+                        break;
                     case OpCode.Not:
                         {
                             var falsey = IsFalsey(Pop());

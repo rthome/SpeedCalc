@@ -160,6 +160,17 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void Modulo()
+        {
+            Code.Compile("5 mod 2;")
+                .Number(5)
+                .Number(2)
+                .Instr(OpCode.Modulo)
+                .Pop()
+                .Test();
+        }
+
+        [Fact]
         public void Print()
         {
             Code.Compile("print 123;")

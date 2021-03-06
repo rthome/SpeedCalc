@@ -46,6 +46,7 @@
         Fn,
         For,
         If,
+        Mod,
         Or,
         Print,
         Return,

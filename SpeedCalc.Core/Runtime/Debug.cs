@@ -55,6 +55,7 @@ namespace SpeedCalc.Core.Runtime
                 case OpCode.Multiply:
                 case OpCode.Divide:
                 case OpCode.Exp:
+                case OpCode.Modulo:
                 case OpCode.Not:
                 case OpCode.Negate:
                 case OpCode.Print:

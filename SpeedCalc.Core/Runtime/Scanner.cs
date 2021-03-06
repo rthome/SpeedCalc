@@ -88,6 +88,7 @@
                     }
                     break;
                 case 'i': return CheckKeyword(1, "f", TokenType.If);
+                case 'm': return CheckKeyword(1, "od", TokenType.Mod);
                 case 'o': return CheckKeyword(1, "r", TokenType.Or);
                 case 'p': return CheckKeyword(1, "rint", TokenType.Print);
                 case 'r': return CheckKeyword(1, "eturn", TokenType.Return);

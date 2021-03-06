@@ -96,6 +96,30 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void RunsGroupedExponentiationExpr()
+        {
+            RunScriptAndExpect("1000", "print (5+5)**3;");
+        }
+
+        [Fact]
+        public void RunsModuloExpr()
+        {
+            RunScriptAndExpect("1", "print 5 mod 2;");
+        }
+
+        [Fact]
+        public void RunsModuloWithMultiply()
+        {
+            RunScriptAndExpect("3", "print 5*3 mod 4;");
+        }
+
+        [Fact]
+        public void RunsModuloWithExpAndAddition()
+        {
+            RunScriptAndExpect("5", "print 2 + 23 mod 2**2;");
+        }
+
+        [Fact]
         public void RunsPrintStmt()
         {
             var output = RunScriptAndCaptureOutput("print 1000;");
