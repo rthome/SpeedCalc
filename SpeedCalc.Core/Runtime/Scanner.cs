@@ -151,12 +151,18 @@
                         return MakeToken(TokenType.Dot);
                 case ':': return MakeToken(TokenType.Colon);
                 case ';': return MakeToken(TokenType.Semicolon);
-                case '-': return MakeToken(TokenType.Minus);
-                case '+': return MakeToken(TokenType.Plus);
-                case '/': return MakeToken(TokenType.Slash);
+                case '-':
+                    return MakeToken(Match('=') ? TokenType.MinusEqual : TokenType.Minus);
+                case '+':
+                    return MakeToken(Match('=') ? TokenType.PlusEqual : TokenType.Plus);
+                case '/':
+                    return MakeToken(Match('=') ? TokenType.SlashEqual : TokenType.Slash);
 
                 case '*':
-                    return MakeToken(Match('*') ? TokenType.StarStar : TokenType.Star);
+                    if (Match('*'))
+                        return MakeToken(Match('=') ? TokenType.StarStarEqual : TokenType.StarStar);
+                    else
+                        return MakeToken(Match('=') ? TokenType.StarEqual : TokenType.Star);
                 case '!':
                     return MakeToken(Match('=') ? TokenType.BangEqual : TokenType.Bang);
                 case '=':

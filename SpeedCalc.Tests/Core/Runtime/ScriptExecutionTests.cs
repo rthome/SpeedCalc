@@ -199,6 +199,46 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void RunsAdditionAssignmentOperator()
+        {
+            RunScriptAndExpect("1", "var a = 0; a += 1; print a;");
+        }
+
+        [Fact]
+        public void RunsSubtractionAssignmentOperator()
+        {
+            RunScriptAndExpect("2", "var a = 3; a -= 1; print a;");
+        }
+
+        [Fact]
+        public void RunsMultiplicationAssignmentOperator()
+        {
+            RunScriptAndExpect("20", "var a = 5; a *= 4; print a;");
+        }
+
+        [Fact]
+        public void RunsDivisionAssignmentOperator()
+        {
+            RunScriptAndExpect("2", "var a = 10; a /= 5; print a;");
+        }
+
+        [Fact]
+        public void RunsExponentiationAssignmentOperator()
+        {
+            RunScriptAndExpect("9", "var a = 3; a **= 2; print a;");
+        }
+
+        [Fact]
+        public void ErrorsOnArithmeticAssignmentOperatorInDefinition()
+        {
+            CompilerErrors("var a += 1;");
+            CompilerErrors("var a -= 1;");
+            CompilerErrors("var a *= 1;");
+            CompilerErrors("var a /= 1;");
+            CompilerErrors("var a **= 1;");
+        }
+
+        [Fact]
         public void RunsIf()
         {
             RunScriptAndExpect("true", "if true: print true;");
@@ -312,7 +352,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             const string Script = @"var s = 0;
                                     while s < 10:
-                                        s = s + 1;
+                                        s += 1;
                                     print s;";
 
             RunScriptAndExpect("10", Script);
@@ -335,7 +375,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             const string Script = @"var s = 10;
                                     while s > 0:
                                     {
-                                        s = s - 1;
+                                        s -= 1;
                                         print 1;
                                     }";
 
@@ -348,7 +388,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             const string Script = @"var s = 10;
                                     while s > 0:
                                     {
-                                        s = s - 1;
+                                        s -= 1;
                                         if s == 3:
                                             print 333;
                                     }";
@@ -367,7 +407,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsIncremeningForLoop()
         {
-            const string Script = @"for var i = 0; i < 5; i = i + 1: { print i; }";
+            const string Script = @"for var i = 0; i < 5; i += 1: { print i; }";
 
             RunScriptAndExpect("0\r\n1\r\n2\r\n3\r\n4", Script);
         }
@@ -375,7 +415,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsForLoopWithPredefinedVariable()
         {
-            const string Script = @"var i = 0; for ; i < 5; i = i + 1: { } print i;";
+            const string Script = @"var i = 0; for ; i < 5; i += 1: { } print i;";
 
             RunScriptAndExpect("5", Script);
         }
@@ -384,7 +424,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void RunsForLoopWithAssignmentToGlobal()
         {
             const string Script = @"var i = 0;
-                                    for var c = 0; c < 10; c = c + 1: { i = i + c; } 
+                                    for var c = 0; c < 10; c += 1: { i += c; } 
                                     print i;";
 
             RunScriptAndExpect("45", Script);
@@ -394,8 +434,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void RunsNestedForLoop()
         {
             const string Script = @"var c = 0;
-                                    for var i = 0; i < 3; i = i + 1: {
-                                        for var j = 0; j < 3; j = j + 1: {
+                                    for var i = 0; i < 3; i += 1: {
+                                        for var j = 0; j < 3; j += 1: {
                                             c = c + 1;
                                         }
                                     } 

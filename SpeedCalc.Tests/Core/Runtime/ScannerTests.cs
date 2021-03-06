@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using SpeedCalc.Core.Runtime;
+
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-
-using SpeedCalc.Core.Runtime;
 
 using Xunit;
 
@@ -68,8 +68,6 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData(";", Semicolon)]
         [InlineData("(", ParenLeft)]
         [InlineData(")", ParenRight)]
-        [InlineData("+", Plus)]
-        [InlineData("/", Slash)]
         [InlineData("!", Bang)]
         [InlineData("!=", BangEqual)]
         [InlineData("=", Equal)]
@@ -78,8 +76,16 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData(">=", GreaterEqual)]
         [InlineData("<", Less)]
         [InlineData("<=", LessEqual)]
+        [InlineData("-", Minus)]
+        [InlineData("-=", MinusEqual)]
+        [InlineData("+", Plus)]
+        [InlineData("+=", PlusEqual)]
+        [InlineData("/", Slash)]
+        [InlineData("/=", SlashEqual)]
         [InlineData("*", Star)]
+        [InlineData("*=", StarEqual)]
         [InlineData("**", StarStar)]
+        [InlineData("**=", StarStarEqual)]
         public void SimpleTokens(string lexeme, TokenType expectedType)
         {
             ScanSingleToken(lexeme, expectedType);

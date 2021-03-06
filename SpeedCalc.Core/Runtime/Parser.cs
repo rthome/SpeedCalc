@@ -93,9 +93,6 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     null,   Precedence.None),       // Dot
             new Rule(null,     null,   Precedence.None),       // Colon
             new Rule(null,     null,   Precedence.None),       // Semicolon
-            new Rule(Unary,    Binary, Precedence.Term),       // Minus
-            new Rule(null,     Binary, Precedence.Term),       // Plus
-            new Rule(null,     Binary, Precedence.Factor),     // Slash
             new Rule(Unary,    null,   Precedence.None),       // Bang
             new Rule(null,     Binary, Precedence.Equality),   // BangEqual
             new Rule(null,     null,   Precedence.None),       // Equal
@@ -104,8 +101,16 @@ namespace SpeedCalc.Core.Runtime
             new Rule(null,     Binary, Precedence.Comparison), // GreaterEqual
             new Rule(null,     Binary, Precedence.Comparison), // Less
             new Rule(null,     Binary, Precedence.Comparison), // LessEqual
+            new Rule(Unary,    Binary, Precedence.Term),       // Minus
+            new Rule(null,     null,   Precedence.None),       // MinusEqual
+            new Rule(null,     Binary, Precedence.Term),       // Plus
+            new Rule(null,     null,   Precedence.None),       // PlusEqual
+            new Rule(null,     Binary, Precedence.Factor),     // Slash
+            new Rule(null,     null,   Precedence.None),       // SlashEqual
             new Rule(null,     Binary, Precedence.Factor),     // Star
+            new Rule(null,     null,   Precedence.None),       // StarEqual
             new Rule(null,     Binary, Precedence.Exponent),   // StarStar
+            new Rule(null,     null,   Precedence.None),       // StarStarEqual
             new Rule(Variable, null,   Precedence.None),       // Identifier
             new Rule(Number,   null,   Precedence.None),       // Number
             new Rule(null,     And,    Precedence.And),        // And
@@ -513,10 +518,33 @@ namespace SpeedCalc.Core.Runtime
                 set = OpCode.AssignGlobal;
             }
 
-            if (canAssign && Match(state, TokenType.Equal))
+            if (canAssign)
             {
-                Expression(state);
-                Emit(state, set, (byte)arg);
+                void EmitArithmeticAssignmentOperator(OpCode operation)
+                {
+                    Emit(state, get, (byte)arg);
+                    Expression(state);
+                    Emit(state, operation);
+                    Emit(state, set, (byte)arg);
+                }
+
+                if (Match(state, TokenType.Equal))
+                {
+                    Expression(state);
+                    Emit(state, set, (byte)arg);
+                }
+                else if (Match(state, TokenType.MinusEqual))
+                    EmitArithmeticAssignmentOperator(OpCode.Subtract);
+                else if (Match(state, TokenType.PlusEqual))
+                    EmitArithmeticAssignmentOperator(OpCode.Add);
+                else if (Match(state, TokenType.SlashEqual))
+                    EmitArithmeticAssignmentOperator(OpCode.Divide);
+                else if (Match(state, TokenType.StarEqual))
+                    EmitArithmeticAssignmentOperator(OpCode.Multiply);
+                else if (Match(state, TokenType.StarStarEqual))
+                    EmitArithmeticAssignmentOperator(OpCode.Exp);
+                else
+                    Emit(state, get, (byte)arg);
             }
             else
                 Emit(state, get, (byte)arg);
@@ -542,7 +570,7 @@ namespace SpeedCalc.Core.Runtime
         {
             while (!Check(state, TokenType.BraceRight) && !Check(state, TokenType.EOF))
                 Declaration(state);
-            Consume(state, TokenType.BraceRight, "EXpect '}' after block");
+            Consume(state, TokenType.BraceRight, "Expect '}' after block");
         }
 
         static void ExpressionStatement(State state)

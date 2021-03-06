@@ -14,11 +14,8 @@
         Dot,
         Colon,
         Semicolon,
-        Minus,
-        Plus,
-        Slash,
-
-        // One/two character
+        
+        // One/two/three character
         Bang,
         BangEqual,
         Equal,
@@ -27,8 +24,16 @@
         GreaterEqual,
         Less,
         LessEqual,
+        Minus,
+        MinusEqual,
+        Plus,
+        PlusEqual,
+        Slash,
+        SlashEqual,
         Star,
+        StarEqual,
         StarStar,
+        StarStarEqual,
 
         // Literals
         Identifier,
