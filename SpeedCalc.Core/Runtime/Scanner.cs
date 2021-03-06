@@ -151,13 +151,13 @@
                         return MakeToken(TokenType.Dot);
                 case ':': return MakeToken(TokenType.Colon);
                 case ';': return MakeToken(TokenType.Semicolon);
+
                 case '-':
                     return MakeToken(Match('=') ? TokenType.MinusEqual : TokenType.Minus);
                 case '+':
                     return MakeToken(Match('=') ? TokenType.PlusEqual : TokenType.Plus);
                 case '/':
                     return MakeToken(Match('=') ? TokenType.SlashEqual : TokenType.Slash);
-
                 case '*':
                     if (Match('*'))
                         return MakeToken(Match('=') ? TokenType.StarStarEqual : TokenType.StarStar);
