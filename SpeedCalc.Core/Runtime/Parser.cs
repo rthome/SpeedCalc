@@ -218,6 +218,8 @@ namespace SpeedCalc.Core.Runtime
             return (byte)constantIndex;
         }
 
+        static int CodePosition(State state) => state.CompilingChunk.Code.Count;
+
         static void Emit(State state, byte value) => state.CompilingChunk.Write(value, state.Previous.Line);
 
         static void Emit(State state, OpCode value) => Emit(state, (byte)value);
@@ -237,7 +239,7 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, value);
             Emit(state, 0xff);
             Emit(state, 0xff);
-            return state.CompilingChunk.Code.Count - 2;
+            return CodePosition(state) - 2;
         }
 
         static void EmitLoop(State state, int loopStart)
@@ -254,7 +256,7 @@ namespace SpeedCalc.Core.Runtime
 
         static void PatchJump(State state, int offset)
         {
-            var jump = state.CompilingChunk.Code.Count - offset - 2;
+            var jump = CodePosition(state) - offset - 2;
             if (jump > ushort.MaxValue)
                 Error(state, "Too much code to jump over");
 
@@ -550,6 +552,61 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.Pop);
         }
 
+        static void ForStatement(State state)
+        {
+            BeginScope(state);
+
+            // Initializer
+            if (Match(state, TokenType.Var))
+                VarDeclaration(state);
+            else if (Match(state, TokenType.Semicolon))
+            {
+                // No initializer
+            }   
+            else
+                ExpressionStatement(state);
+
+            var loopStart = CodePosition(state);
+
+            // Condition
+            var exitJump = -1;
+            if (!Match(state, TokenType.Semicolon))
+            {
+                Expression(state);
+                Consume(state, TokenType.Semicolon, "Expect ';' after loop condition");
+                // Jump out if condition is negative
+                exitJump = EmitJump(state, OpCode.JumpIfFalse);
+                Emit(state, OpCode.Pop); // Condition
+            }
+
+            // Increment
+            if (!Match(state, TokenType.Colon))
+            {
+                var bodyJump = EmitJump(state, OpCode.Jump);
+
+                var incrementStart = CodePosition(state);
+                Expression(state);
+                Emit(state, OpCode.Pop);
+                Consume(state, TokenType.Colon, "Expect ':' after for clauses");
+
+                EmitLoop(state, loopStart);
+                loopStart = incrementStart;
+                PatchJump(state, bodyJump);
+            }
+
+            Statement(state);
+
+            EmitLoop(state, loopStart);
+
+            if (exitJump != -1)
+            {
+                PatchJump(state, exitJump);
+                Emit(state, OpCode.Pop); // Condition, if Pop has been jumped over above
+            }
+
+            EndScope(state);
+        }
+
         static void IfStatement(State state)
         {
             Expression(state);
@@ -581,7 +638,7 @@ namespace SpeedCalc.Core.Runtime
 
         static void WhileStatement(State state)
         {
-            var loopStart = state.CompilingChunk.Code.Count;
+            var loopStart = CodePosition(state);
 
             Expression(state);
             Consume(state, TokenType.Colon, "Expect ':' after condition");
@@ -601,6 +658,8 @@ namespace SpeedCalc.Core.Runtime
         {
             if (Match(state, TokenType.Print))
                 PrintStatement(state);
+            else if (Match(state, TokenType.For))
+                ForStatement(state);
             else if (Match(state, TokenType.If))
                 IfStatement(state);
             else if (Match(state, TokenType.While))

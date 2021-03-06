@@ -28,7 +28,6 @@ namespace SpeedCalc.Tests.Core.Runtime
             var chunk = new Chunk();
             Assert.True(Parser.Compile(source, chunk));
 
-
             var vm = new VirtualMachine();
             var writer = new StringWriter();
 
@@ -355,6 +354,54 @@ namespace SpeedCalc.Tests.Core.Runtime
                                     }";
 
             RunScriptAndExpect("333", Script);
+        }
+
+        [Fact]
+        public void RunsSimpleForLoop()
+        {
+            const string Script = @"for var i = true; i;: { print i; i = false; }";
+
+            RunScriptAndExpect("true", Script);
+        }
+
+        [Fact]
+        public void RunsIncremeningForLoop()
+        {
+            const string Script = @"for var i = 0; i < 5; i = i + 1: { print i; }";
+
+            RunScriptAndExpect("0\r\n1\r\n2\r\n3\r\n4", Script);
+        }
+
+        [Fact]
+        public void RunsForLoopWithPredefinedVariable()
+        {
+            const string Script = @"var i = 0; for ; i < 5; i = i + 1: { } print i;";
+
+            RunScriptAndExpect("5", Script);
+        }
+
+        [Fact]
+        public void RunsForLoopWithAssignmentToGlobal()
+        {
+            const string Script = @"var i = 0;
+                                    for var c = 0; c < 10; c = c + 1: { i = i + c; } 
+                                    print i;";
+
+            RunScriptAndExpect("45", Script);
+        }
+
+        [Fact]
+        public void RunsNestedForLoop()
+        {
+            const string Script = @"var c = 0;
+                                    for var i = 0; i < 3; i = i + 1: {
+                                        for var j = 0; j < 3; j = j + 1: {
+                                            c = c + 1;
+                                        }
+                                    } 
+                                    print c;";
+
+            RunScriptAndExpect("9", Script);
         }
     }
 }
