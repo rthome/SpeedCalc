@@ -61,11 +61,20 @@ namespace SpeedCalc.Core.Runtime
 
         sealed class FunctionVal : Value
         {
-            public object Value { get; }
+            public string Name { get; }
 
-            public override int GetHashCode() => Value.GetHashCode();
+            public int Arity { get; }
 
-            public FunctionVal(object value) => Value = value ?? throw new ArgumentNullException(nameof(value));
+            public Chunk Chunk { get; }
+
+            public override int GetHashCode() => new { Name, Arity }.GetHashCode();
+
+            public FunctionVal(string name, int arity)
+            {
+                Name = name ?? throw new ArgumentNullException(nameof(name));
+                Arity = arity;
+                Chunk = new Chunk();
+            }
         }
 
         #endregion
@@ -79,7 +88,7 @@ namespace SpeedCalc.Core.Runtime
 
         public static Value String(string value) => new StringVal(value);
 
-        public static Value Function(object value) => new FunctionVal(value);
+        public static Value Function(string name, int arity) => new FunctionVal(name, arity);
 
         public static bool IsBool(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is BoolVal;
 
@@ -113,14 +122,6 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a string value.");
         }
 
-        public static object AsFunction(this Value value)
-        {
-            if ((value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal val)
-                return val.Value;
-            else
-                throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a function value.");
-        }
-
         public static bool EqualsValue(this Value firstValue, Value secondValue)
         {
             if (firstValue.GetType() != secondValue.GetType())
@@ -131,7 +132,7 @@ namespace SpeedCalc.Core.Runtime
                 BoolVal _ => firstValue.AsBool() == secondValue.AsBool(),
                 NumberVal _ => firstValue.AsNumber() == secondValue.AsNumber(),
                 StringVal _ => firstValue.AsString() == secondValue.AsString(),
-                FunctionVal _ => firstValue.AsFunction() == secondValue.AsFunction(),
+                FunctionVal _ => ReferenceEquals(firstValue, secondValue),
                 _ => throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'"),
             };
         }
@@ -146,7 +147,7 @@ namespace SpeedCalc.Core.Runtime
                 BoolVal _ => value.AsBool() ? "true" : "false",
                 NumberVal _ => value.AsNumber().ToString("G", CultureInfo.InvariantCulture),
                 StringVal val => val.Value,
-                FunctionVal _ => "<function>",
+                FunctionVal val => $"<fn {val.Name} '{val.Arity}>",
                 _ => throw new RuntimeException($"Unknown value type received: '{value.GetType()}'"),
             };
         }
