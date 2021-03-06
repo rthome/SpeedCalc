@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SpeedCalc.Core.Runtime
@@ -84,6 +85,12 @@ namespace SpeedCalc.Core.Runtime
                 disassembledInstructions.Add(instruction);
             }
             return disassembledInstructions;
+        }
+
+        public static IEnumerable<string> DisassembleFunction(this Function function)
+        {
+            var disassembledInstructions = function.Chunk.DisassembleChunk();
+            return Enumerable.Concat(new[] { $"---- {function} ----" }, disassembledInstructions);
         }
     }
 }

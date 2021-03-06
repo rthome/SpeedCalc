@@ -9,15 +9,14 @@ namespace SpeedCalc.ConsoleApp
         static void Main()
         {
             var vm = new VirtualMachine();
-            var chunk = new Chunk();
 
             while (true)
             {
                 var expression = Console.ReadLine();
 
-                Parser.Compile(expression, chunk);
+                var function = Parser.Compile(expression);
 
-                vm.Interpret(chunk);
+                vm.Interpret(function.Chunk);
 
                 try
                 {

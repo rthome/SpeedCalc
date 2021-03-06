@@ -18,7 +18,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             Assert.True(Values.String("").IsString());
 
-            Assert.True(Values.Function("testfunc", 0).IsFunction());
+            Assert.True(Values.Function(new Function("testfunc", 0)).IsFunction());
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.False(stringVal.IsNumber());
             Assert.False(stringVal.IsFunction());
 
-            var funcVal = Values.Function("myFunction", 2);
+            var funcVal = Values.Function(new Function("myFunction", 2));
             Assert.False(funcVal.IsBool());
             Assert.False(funcVal.IsString());
             Assert.False(funcVal.IsNumber());
@@ -56,7 +56,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsBool());
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsNumber());
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsString());
-            // Not supported for function
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsFunction());
         }
 
         [Fact]
@@ -76,6 +76,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.False(Values.Bool(true).Equals(null));
             Assert.False(Values.Bool(true).Equals(true));
             Assert.False(Values.String("test").Equals("test"));
+
+            var func = new Function("test", 0);
+            Assert.False(Values.Function(func).Equals(func));
         }
 
         [Fact]
@@ -90,6 +93,9 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             Assert.Equal("", Values.String("").AsString());
             Assert.Equal("test", Values.String("test").AsString());
+
+            var func = new Function("test", 0);
+            Assert.Equal(func, Values.Function(func).AsFunction());
         }
 
         [Fact]
@@ -104,9 +110,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Throws<RuntimeValueTypeException>(() => Values.String("").AsBool());
             Assert.Throws<RuntimeValueTypeException>(() => Values.String("").AsNumber());
 
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Function("func", 1).AsBool());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Function("func", 1).AsString());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.Function("func", 1).AsNumber());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsString());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsNumber());
         }
 
         [Fact]
@@ -133,12 +139,14 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void FunctionValueEquality()
         {
-            var func1 = Values.Function("sine", 1);
-            var func2 = Values.Function("cosine", 1);
+            var f1 = new Function("sine", 1);
+            var func1 = Values.Function(f1);
+            var func2 = Values.Function(new Function("cosine", 1));
             var func1Ref = func1;
 
             Assert.Equal(func1, func1);
             Assert.Equal(func1, func1Ref);
+            Assert.Equal(func1, Values.Function(f1));
             Assert.NotEqual(func1, func2);
         }
 
@@ -147,7 +155,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             Assert.NotEqual(Values.Bool(true), Values.String(""));
             Assert.NotEqual(Values.Bool(true), Values.Number(0m));
-            Assert.NotEqual(Values.Bool(true), Values.Function("test", 0));
+            Assert.NotEqual(Values.Bool(true), Values.Function(new Function("test", 0)));
         }
     }
 }

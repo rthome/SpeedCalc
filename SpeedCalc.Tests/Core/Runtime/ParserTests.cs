@@ -8,8 +8,6 @@ using System.Text;
 
 using Xunit;
 
-using Debug = SpeedCalc.Core.Runtime.Debug;
-
 namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ParserTests
@@ -19,7 +17,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             public class Seq
             {
                 readonly Chunk chunk;
-                readonly List<Action> ops = new List<Action>();
+                readonly List<Action> ops = new();
                 int offset;
                 private readonly bool toEnd;
 
@@ -107,12 +105,12 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             public static Seq Compile(string source, int initialOffset = 0, bool checkToEnd = true)
             {
-                var chunk = new Chunk();
-                Assert.True(Parser.Compile(source, chunk));
-                System.Diagnostics.Debug.WriteLineIf(Debugger.IsAttached, Debug.DisassembleChunk(chunk)
+                var function = Parser.Compile(source);
+                Assert.NotNull(function);
+                System.Diagnostics.Debug.WriteLineIf(Debugger.IsAttached, function.DisassembleFunction()
                     .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line), sb => sb.ToString()));
 
-                return new Seq(chunk, initialOffset, checkToEnd);
+                return new Seq(function.Chunk, initialOffset, checkToEnd);
             }
         }
 

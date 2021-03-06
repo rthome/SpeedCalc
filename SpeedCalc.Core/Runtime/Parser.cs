@@ -27,8 +27,18 @@ namespace SpeedCalc.Core.Runtime
             public int Depth;
         }
 
+        public enum FunctionType
+        {
+            Function,
+            Script,
+        }
+
         public sealed class Compiler
         {
+            public Function Function { get; set; }
+
+            public FunctionType FunctionType { get;set; }
+
             public Local[] Locals { get; } = new Local[byte.MaxValue + 1];
             
             public int LocalCount { get; set; }
@@ -43,6 +53,16 @@ namespace SpeedCalc.Core.Runtime
                 var index = LocalCount++;
                 Locals[index].Token = name;
                 Locals[index].Depth = -1;
+            }
+
+            public Compiler(FunctionType type)
+            {
+                FunctionType = type;
+                Function = new Function(string.Empty, 0);
+
+                var local = Locals[LocalCount++];
+                local.Depth = 0;
+                local.Token = new Token(TokenType.Error, string.Empty, 0);
             }
         }
 
@@ -75,8 +95,6 @@ namespace SpeedCalc.Core.Runtime
         public sealed class State
         {
             public Scanner Scanner { get; set; }
-
-            public Chunk CompilingChunk { get; set; }
 
             public Compiler Compiler { get; set; }
 
@@ -246,17 +264,19 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        static Chunk CurrentChunk(State state) => state.Compiler.Function.Chunk;
+
         static byte MakeConstant(State state, Value value)
         {
-            var constantIndex = state.CompilingChunk.AddConstant(value);
+            var constantIndex = CurrentChunk(state).AddConstant(value);
             if (constantIndex > byte.MaxValue)
                 Error(state, "Too many constants in one chunk");
             return (byte)constantIndex;
         }
 
-        static int CurrentCodePosition(State state) => state.CompilingChunk.Code.Count;
+        static int CurrentCodePosition(State state) => CurrentChunk(state).Code.Count;
 
-        static void Emit(State state, byte value) => state.CompilingChunk.Write(value, state.Previous.Line);
+        static void Emit(State state, byte value) => CurrentChunk(state).Write(value, state.Previous.Line);
 
         static void Emit(State state, OpCode value) => Emit(state, (byte)value);
 
@@ -282,7 +302,7 @@ namespace SpeedCalc.Core.Runtime
         {
             Emit(state, OpCode.Loop);
 
-            var offset = state.CompilingChunk.Code.Count - loopStart + 2;
+            var offset = CurrentChunk(state).Code.Count - loopStart + 2;
             if (offset > ushort.MaxValue)
                 Error(state, "Loop body too large");
 
@@ -296,19 +316,21 @@ namespace SpeedCalc.Core.Runtime
             if (jump > ushort.MaxValue)
                 Error(state, "Too much code to jump over");
 
-            state.CompilingChunk.Code[offset] = (byte)((jump >> 8) & 0xff);
-            state.CompilingChunk.Code[offset + 1] = (byte)(jump & 0xff);
+            CurrentChunk(state).Code[offset] = (byte)((jump >> 8) & 0xff);
+            CurrentChunk(state).Code[offset + 1] = (byte)(jump & 0xff);
         }
 
-        static void EndCompile(State state)
+        static Function EndCompile(State state)
         {
             EmitReturn(state);
 
             if (!state.HadError)
             {
-                foreach (var instruction in state.CompilingChunk.DisassembleChunk())
-                    Console.WriteLine(instruction);
+                foreach (var line in state.Compiler.Function.DisassembleFunction())
+                    Console.WriteLine(line);
             }
+
+            return state.Compiler.Function;
         }
 
         static void BeginScope(State state)
@@ -806,13 +828,12 @@ namespace SpeedCalc.Core.Runtime
 
         #endregion
 
-        public static bool Compile(string source, Chunk chunk)
+        public static Function Compile(string source)
         {
             var state = new State
             {
                 Scanner = new Scanner(source ?? throw new ArgumentNullException(nameof(source))),
-                CompilingChunk = chunk ?? throw new ArgumentNullException(nameof(chunk)),
-                Compiler = new Compiler(),
+                Compiler = new Compiler(FunctionType.Script),
             };
 
             Advance(state);
@@ -820,10 +841,8 @@ namespace SpeedCalc.Core.Runtime
             while (!Match(state, TokenType.EOF))
                 Declaration(state);
 
-            Consume(state, TokenType.EOF, "Expect end of expression");
-            EndCompile(state);
-
-            return !state.HadError;
+            var function = EndCompile(state);
+            return state.HadError ? null : function;
         }
     }
 }

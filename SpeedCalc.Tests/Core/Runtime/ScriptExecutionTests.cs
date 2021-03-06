@@ -10,29 +10,29 @@ namespace SpeedCalc.Tests.Core.Runtime
     {
         static void CompilerErrors(string source)
         {
-            var chunk = new Chunk();
-            Assert.False(Parser.Compile(source, chunk));
+            var function = Parser.Compile(source);
+            Assert.Null(function);
         }
 
         static void RunScript(string source)
         {
-            var chunk = new Chunk();
-            Assert.True(Parser.Compile(source, chunk));
+            var function = Parser.Compile(source);
+            Assert.NotNull(function);
 
             var vm = new VirtualMachine();
-            vm.Interpret(chunk);
+            vm.Interpret(function.Chunk);
         }
 
         static string RunScriptAndCaptureOutput(string source)
         {
-            var chunk = new Chunk();
-            Assert.True(Parser.Compile(source, chunk));
+            var function = Parser.Compile(source);
+            Assert.NotNull(function);
 
             var vm = new VirtualMachine();
             var writer = new StringWriter();
 
             vm.SetStdOut(writer);
-            vm.Interpret(chunk);
+            vm.Interpret(function.Chunk);
 
             return writer.ToString().TrimEnd('\r', '\n');
         }
