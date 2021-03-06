@@ -46,6 +46,32 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        public sealed class LoopState
+        {
+            public int Start { get; set; }
+
+            public int ScopeDepth { get; set; }
+
+            public RuntimeArray<int> UnresolvedBreaks { get; set; }
+
+            public void PatchUnresolvedBreaks(State state)
+            {
+                foreach (var breakJump in UnresolvedBreaks)
+                    PatchJump(state, breakJump);
+            }
+
+            public LoopState(int loopStart, int scopeDepth, RuntimeArray<int> unresolvedBreaks)
+            {
+                Start = loopStart;
+                ScopeDepth = scopeDepth;
+                UnresolvedBreaks = unresolvedBreaks ?? throw new ArgumentNullException(nameof(unresolvedBreaks));
+            }
+
+            public static LoopState Default => new LoopState(-1, 0, new RuntimeArray<int>());
+
+            public static LoopState FromCurrentState(State state) => new LoopState(CurrentCodePosition(state), state.Compiler.ScopeDepth, new RuntimeArray<int>());
+        }
+
         public sealed class State
         {
             public Scanner Scanner { get; set; }
@@ -57,6 +83,8 @@ namespace SpeedCalc.Core.Runtime
             public Token Current { get; set; }
 
             public Token Previous { get; set; }
+
+            public LoopState InnermostLoop { get; set; } = LoopState.Default;
 
             public bool HadError { get; set; }
 
@@ -114,6 +142,8 @@ namespace SpeedCalc.Core.Runtime
             new Rule(Variable, null,   Precedence.None),       // Identifier
             new Rule(Number,   null,   Precedence.None),       // Number
             new Rule(null,     And,    Precedence.And),        // And
+            new Rule(null,     null,   Precedence.None),       // Break
+            new Rule(null,     null,   Precedence.None),       // Continue
             new Rule(null,     null,   Precedence.None),       // Else
             new Rule(Literal,  null,   Precedence.None),       // False
             new Rule(null,     null,   Precedence.None),       // Fn,
@@ -224,7 +254,7 @@ namespace SpeedCalc.Core.Runtime
             return (byte)constantIndex;
         }
 
-        static int CodePosition(State state) => state.CompilingChunk.Code.Count;
+        static int CurrentCodePosition(State state) => state.CompilingChunk.Code.Count;
 
         static void Emit(State state, byte value) => state.CompilingChunk.Write(value, state.Previous.Line);
 
@@ -245,7 +275,7 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, value);
             Emit(state, 0xff);
             Emit(state, 0xff);
-            return CodePosition(state) - 2;
+            return CurrentCodePosition(state) - 2;
         }
 
         static void EmitLoop(State state, int loopStart)
@@ -262,7 +292,7 @@ namespace SpeedCalc.Core.Runtime
 
         static void PatchJump(State state, int offset)
         {
-            var jump = CodePosition(state) - offset - 2;
+            var jump = CurrentCodePosition(state) - offset - 2;
             if (jump > ushort.MaxValue)
                 Error(state, "Too much code to jump over");
 
@@ -598,7 +628,8 @@ namespace SpeedCalc.Core.Runtime
             else
                 ExpressionStatement(state);
 
-            var loopStart = CodePosition(state);
+            var surroundingLoopState = state.InnermostLoop;
+            state.InnermostLoop = LoopState.FromCurrentState(state);
 
             // Condition
             var exitJump = -1;
@@ -616,25 +647,28 @@ namespace SpeedCalc.Core.Runtime
             {
                 var bodyJump = EmitJump(state, OpCode.Jump);
 
-                var incrementStart = CodePosition(state);
+                var incrementStart = CurrentCodePosition(state);
                 Expression(state);
                 Emit(state, OpCode.Pop);
                 Consume(state, TokenType.Colon, "Expect ':' after for clauses");
 
-                EmitLoop(state, loopStart);
-                loopStart = incrementStart;
+                EmitLoop(state, state.InnermostLoop.Start);
+                state.InnermostLoop.Start = incrementStart;
                 PatchJump(state, bodyJump);
             }
 
             Statement(state);
 
-            EmitLoop(state, loopStart);
+            EmitLoop(state, state.InnermostLoop.Start);
 
             if (exitJump != -1)
             {
                 PatchJump(state, exitJump);
                 Emit(state, OpCode.Pop); // Condition, if Pop has been jumped over above
             }
+
+            state.InnermostLoop.PatchUnresolvedBreaks(state);
+            state.InnermostLoop = surroundingLoopState;
 
             EndScope(state);
         }
@@ -670,7 +704,8 @@ namespace SpeedCalc.Core.Runtime
 
         static void WhileStatement(State state)
         {
-            var loopStart = CodePosition(state);
+            var surroundingLoopState = state.InnermostLoop;
+            state.InnermostLoop = LoopState.FromCurrentState(state);
 
             Expression(state);
             Consume(state, TokenType.Colon, "Expect ':' after condition");
@@ -680,10 +715,48 @@ namespace SpeedCalc.Core.Runtime
             Emit(state, OpCode.Pop);
             Statement(state);
 
-            EmitLoop(state, loopStart);
+            EmitLoop(state, state.InnermostLoop.Start);
 
             PatchJump(state, exitJump);
             Emit(state, OpCode.Pop);
+
+            state.InnermostLoop.PatchUnresolvedBreaks(state);
+            state.InnermostLoop = surroundingLoopState;
+        }
+
+        static void ContinueStatement(State state)
+        {
+            if (state.InnermostLoop.Start == -1)
+                Error(state, "Can't use continue outside of a loop");
+
+            Consume(state, TokenType.Semicolon, "Expect ';' after continue");
+
+            // Discard locals
+            var popCount = 0;
+            for (var i = state.Compiler.LocalCount - 1; i >= 0 && state.Compiler.Locals[i].Depth > state.InnermostLoop.ScopeDepth; i--)
+                popCount++;
+            if (popCount > 0)
+                Emit(state, OpCode.PopN, (byte)popCount);
+
+            EmitLoop(state, state.InnermostLoop.Start);
+        }
+
+        static void BreakStatement(State state)
+        {
+            if (state.InnermostLoop.Start == -1)
+                Error(state, "Can't use break outside of a loop");
+
+            Consume(state, TokenType.Semicolon, "Expect ';' after break");
+
+            // Discard locals
+            var popCount = 0;
+            for (var i = state.Compiler.LocalCount - 1; i >= 0 && state.Compiler.Locals[i].Depth > state.InnermostLoop.ScopeDepth; i--)
+                popCount++;
+            if (popCount > 0)
+                Emit(state, OpCode.PopN, (byte)popCount);
+
+            var breakJump = EmitJump(state, OpCode.Jump);
+            state.InnermostLoop.UnresolvedBreaks.Write(breakJump);
         }
 
         static void Statement(State state)
@@ -696,6 +769,10 @@ namespace SpeedCalc.Core.Runtime
                 IfStatement(state);
             else if (Match(state, TokenType.While))
                 WhileStatement(state);
+            else if (Match(state, TokenType.Continue))
+                ContinueStatement(state);
+            else if (Match(state, TokenType.Break))
+                BreakStatement(state);
             else if (Match(state, TokenType.BraceLeft))
             {
                 BeginScope(state);

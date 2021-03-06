@@ -105,6 +105,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         [InlineData("while", While)]
         [InlineData("print", Print)]
         [InlineData("mod", Mod)]
+        [InlineData("break", Break)]
+        [InlineData("continue", Continue)]
         public void KeywordTokens(string lexeme, TokenType expectedType)
         {
             ScanSingleToken(lexeme, expectedType);

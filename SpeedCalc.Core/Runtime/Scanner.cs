@@ -75,6 +75,8 @@
             switch (source[start])
             {
                 case 'a': return CheckKeyword(1, "nd", TokenType.And);
+                case 'b': return CheckKeyword(1, "reak", TokenType.Break);
+                case 'c': return CheckKeyword(1, "ontinue", TokenType.Continue);
                 case 'e': return CheckKeyword(1, "lse", TokenType.Else);
                 case 'f':
                     if (current - start > 1)

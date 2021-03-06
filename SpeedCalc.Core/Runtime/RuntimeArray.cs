@@ -34,7 +34,7 @@ namespace SpeedCalc.Core.Runtime
                 Grow();
             this[Count++] = value;
         }
-
+        
         public IEnumerator<T> GetEnumerator() => new ArraySegment<T>(data, 0, Count).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => new ArraySegment<T>(data, 0, Count).GetEnumerator();

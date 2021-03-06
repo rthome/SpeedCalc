@@ -462,10 +462,154 @@ namespace SpeedCalc.Tests.Core.Runtime
                                         for var j = 0; j < 3; j += 1: {
                                             c = c + 1;
                                         }
-                                    } 
+                                    }
                                     print c;";
 
             RunScriptAndExpect("9", Script);
+        }
+
+        [Fact]
+        public void RunsForLoopWithContinue()
+        {
+            const string Script = @"var c = 0;
+                                    for var i = 0; i < 3; i += 1: {
+                                        c += 1;
+                                        continue;
+                                        c += 1000;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("3", Script);
+        }
+
+        [Fact]
+        public void RunsForLoopWithBreak()
+        {
+            const string Script = @"var c = 0;
+                                    for var i = 0; i < 3; i += 1: {
+                                        c += 1;
+                                        break;
+                                        c += 1000;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("1", Script);
+        }
+
+        [Fact]
+        public void RunsWhileLoopWithContinue()
+        {
+            const string Script = @"var c = 0;
+                                    while c < 3: {
+                                        c += 1;
+                                        continue;
+                                        c += 1000;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("3", Script);
+        }
+
+        [Fact]
+        public void RunsWhileLoopWithBreak()
+        {
+            const string Script = @"var c = 0;
+                                    while c < 3: {
+                                        c += 1;
+                                        break;
+                                        c += 1000;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("1", Script);
+        }
+
+        [Fact]
+        public void RunsNestedWhileLoopWithContinue()
+        {
+            const string Script = @"var c = 0; 
+                                    while c < 6: {
+                                        var x = 0;
+                                        while x < 3: {
+                                            x += 1;
+                                            continue;
+                                            x += 1000;
+                                        }
+                                        c += x;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("6", Script);
+        }
+
+        [Fact]
+        public void RunsNestedWhileLoopWithBreak()
+        {
+            const string Script = @"var c = 0; 
+                                    while c < 2: {
+                                        var x = 0;
+                                        while x < 3: {
+                                            x += 1;
+                                            break;
+                                            x += 1000;
+                                        }
+                                        c += x;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("2", Script);
+        }
+
+        [Fact]
+        public void RunsNestedForLoopWithContinue()
+        {
+            const string Script = @"var c = 0; 
+                                    for var i = 0; i < 2; i += 1: {
+                                        var x = 0;
+                                        for var j = 0; j < 3; j += 1: {
+                                            x += 1;
+                                            continue;
+                                            x += 1000;
+                                        }
+                                        c += x;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("6", Script);
+        }
+
+        [Fact]
+        public void RunsNestedForLoopWithBreak()
+        {
+            const string Script = @"var c = 0; 
+                                    for var i = 0; i < 2; i += 1: {
+                                        var x = 0;
+                                        for var j = 0; j < 3; j += 1: {
+                                            x += 1;
+                                            break;
+                                            x += 1000;
+                                        }
+                                        c += x;
+                                    }
+                                    print c;";
+
+            RunScriptAndExpect("2", Script);
+        }
+
+        [Fact]
+        public void ErrorsOnContinueOutsideOfALoop()
+        {
+            CompilerErrors("continue;");
+            CompilerErrors("{ continue; }");
+            CompilerErrors("if true: continue;");
+        }
+
+        [Fact]
+        public void ErrorsOnBreakOutsideOfALoop()
+        {
+            CompilerErrors("break;");
+            CompilerErrors("{ break; }");
+            CompilerErrors("if true: break;");
         }
     }
 }

@@ -41,6 +41,8 @@
 
         // Keywords
         And,
+        Break,
+        Continue,
         Else,
         False,
         Fn,
