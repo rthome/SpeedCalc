@@ -16,23 +16,17 @@ namespace SpeedCalc.Tests.Core.Runtime
 
         static void RunScript(string source)
         {
-            var function = Parser.Compile(source);
-            Assert.NotNull(function);
-
             var vm = new VirtualMachine();
-            vm.Interpret(function.Chunk);
+            Assert.Equal(InterpretResult.Success, vm.Interpret(source));
         }
 
         static string RunScriptAndCaptureOutput(string source)
         {
-            var function = Parser.Compile(source);
-            Assert.NotNull(function);
-
             var vm = new VirtualMachine();
             var writer = new StringWriter();
 
             vm.SetStdOut(writer);
-            vm.Interpret(function.Chunk);
+            Assert.Equal(InterpretResult.Success, vm.Interpret(source));
 
             return writer.ToString().TrimEnd('\r', '\n');
         }

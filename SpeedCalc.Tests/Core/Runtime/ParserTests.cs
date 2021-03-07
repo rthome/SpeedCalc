@@ -107,8 +107,11 @@ namespace SpeedCalc.Tests.Core.Runtime
             {
                 var function = Parser.Compile(source);
                 Assert.NotNull(function);
-                System.Diagnostics.Debug.WriteLineIf(Debugger.IsAttached, function.DisassembleFunction()
+
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine(Debugger.IsAttached, function.DisassembleFunction()
                     .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line), sb => sb.ToString()));
+#endif
 
                 return new Seq(function.Chunk, initialOffset, checkToEnd);
             }
@@ -219,7 +222,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             Code.Compile("{ var a = 1; print a; }")
                 .Number(1)
-                .LoadLocal(0)
+                .LoadLocal(1)
                 .Print()
                 .Pop()
                 .Test();
@@ -238,7 +241,7 @@ namespace SpeedCalc.Tests.Core.Runtime
                 .Instr(OpCode.Divide)
                 .Instr(OpCode.Add)
                 .Instr(OpCode.Multiply)
-                .LoadLocal(0)
+                .LoadLocal(1)
                 .Print()
                 .Pop()
                 .Test();
@@ -249,7 +252,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             Code.Compile("{ var a = 1; var b = a; }")
                 .Number(1)
-                .LoadLocal(0)
+                .LoadLocal(1)
                 .PopN(2)
                 .Test();
         }
@@ -270,8 +273,8 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             Code.Compile("{ var a = 1; var b = a; print b; }")
                 .Number(1)
-                .LoadLocal(0)
                 .LoadLocal(1)
+                .LoadLocal(2)
                 .Print()
                 .PopN(2)
                 .Test();
@@ -392,15 +395,15 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             Code.Compile("{ var c = 0; while c < 10: c = c + 1; }")
                 .Constant(Values.Number(0))
-                .LoadLocal(0)
+                .LoadLocal(1)
                 .Constant(Values.Number(10))
                 .Instr(OpCode.Less)
                 .JumpIfFalse(12)
                 .Pop()
-                .LoadLocal(0)
+                .LoadLocal(1)
                 .Constant(Values.Number(1))
                 .Instr(OpCode.Add)
-                .AssignLocal(0)
+                .AssignLocal(1)
                 .Pop()
                 .Loop(20)
                 .Pop()

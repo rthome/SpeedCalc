@@ -324,11 +324,13 @@ namespace SpeedCalc.Core.Runtime
         {
             EmitReturn(state);
 
+#if DEBUG
             if (!state.HadError)
             {
                 foreach (var line in state.Compiler.Function.DisassembleFunction())
                     Console.WriteLine(line);
             }
+#endif
 
             return state.Compiler.Function;
         }

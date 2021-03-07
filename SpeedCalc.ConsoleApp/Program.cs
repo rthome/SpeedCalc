@@ -13,19 +13,9 @@ namespace SpeedCalc.ConsoleApp
             while (true)
             {
                 var expression = Console.ReadLine();
+                vm.Interpret(expression);
 
-                var function = Parser.Compile(expression);
-
-                vm.Interpret(function.Chunk);
-
-                try
-                {
-                    var value = vm.Pop();
-                    Console.WriteLine($"  = {value}");
-                }
-                catch (RuntimeExecutionException)
-                {
-                }
+                // TODO: Add results printing back in later
             }
         }
     }

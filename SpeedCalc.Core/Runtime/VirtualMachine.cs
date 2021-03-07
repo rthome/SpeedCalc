@@ -4,24 +4,46 @@ using System.IO;
 
 namespace SpeedCalc.Core.Runtime
 {
+    public enum InterpretResult
+    {
+        Success,
+        CompileError,
+        RuntimeError,
+    }
+
     public sealed class VirtualMachine
     {
-        const int MaxStackSize = 256;
+        struct CallFrame
+        {
+            public Function Function;
 
-        readonly Value[] stack;
-        readonly Dictionary<string, Value> globals;
+            public int IP;
 
-        Chunk executingChunk;
-        int ipOffset;
-        int stackTopOffset;
+            public int StackBase;
+        }
+
+        const int MaxCallFrameDepth = 256;
+        const int MaxStackSize = MaxCallFrameDepth * 64;
+
+        readonly CallFrame[] frames = new CallFrame[MaxCallFrameDepth];
+        readonly Value[] stack = new Value[MaxStackSize];
+        readonly Dictionary<string, Value> globals = new Dictionary<string, Value>();
+
+        int frameCount = 0;
+        int stackTopOffset = 0;
 
         public TextWriter StdOut { get; private set; }
 
-        void Run()
+        InterpretResult Run()
         {
-            byte ReadByte() => executingChunk.Code[ipOffset++];
-            ushort ReadShort() { ipOffset += 2; return (ushort)(executingChunk.Code[ipOffset - 2] << 8 | executingChunk.Code[ipOffset - 1]); };
-            Value ReadConstant() => executingChunk.Constants[ReadByte()];
+            CallFrame frame = frames[frameCount - 1];
+
+            var chunk = frame.Function.Chunk;
+            var code = frame.Function.Chunk.Code;
+
+            byte ReadByte() => code[frame.IP++];
+            ushort ReadShort() { frame.IP += 2; return (ushort)(code[frame.IP - 2] << 8 | code[frame.IP - 1]); };
+            Value ReadConstant() => chunk.Constants[ReadByte()];
 
             void BinaryOp(Func<decimal, decimal, Value> op)
             {
@@ -37,6 +59,10 @@ namespace SpeedCalc.Core.Runtime
 
             while (true)
             {
+#if TRACE
+                System.Diagnostics.Debug.WriteLine(chunk.DisassembleInstruction(frame.IP));
+#endif
+
                 var instruction = (OpCode)ReadByte();
                 switch (instruction)
                 {
@@ -71,7 +97,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.LoadLocal:
                         {
                             var slot = ReadByte();
-                            Push(stack[slot]);
+                            Push(stack[frame.StackBase + slot]);
                         }
                         break;
                     case OpCode.AssignGlobal:
@@ -85,7 +111,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.AssignLocal:
                         {
                             var slot = ReadByte();
-                            stack[slot] = Peek();
+                            stack[frame.StackBase + slot] = Peek();
                         }
                         break;
                     case OpCode.DefineGlobal:
@@ -146,43 +172,61 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Jump:
                         {
                             var offset = ReadShort();
-                            ipOffset += offset;
+                            frame.IP += offset;
                         }
                         break;
                     case OpCode.JumpIfFalse:
                         {
                             var offset = ReadShort();
                             if (IsFalsey(Peek()))
-                                ipOffset += offset;
+                                frame.IP += offset;
                         }
                         break;
                     case OpCode.Loop:
                         {
                             var offset = ReadShort();
-                            ipOffset -= offset;
+                            frame.IP -= offset;
                         }
                         break;
                     case OpCode.Return:
-                        return;
+                        return InterpretResult.Success;
 
                     default:
-                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {ipOffset}");
+                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {frame.IP,4:D4}");
                 }
             }
         }
 
-        public void Interpret(Chunk chunk)
+        public InterpretResult Interpret(string source)
         {
-            if (chunk is null)
-                throw new ArgumentNullException(nameof(chunk));
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
 
-            executingChunk = chunk;
-            ipOffset = 0;
+            var function = Parser.Compile(source);
+            if (function is null)
+                return InterpretResult.CompileError;
 
-            Run();
+            Push(Values.Function(function));
+            ref var frame = ref frames[frameCount++];
+            frame.Function = function;
+            frame.IP = 0;
+            frame.StackBase = 0;
 
-            executingChunk = null;
-            ipOffset = 0;
+            try
+            {
+                return Run();
+            }
+            catch (RuntimeException exc)
+            {
+                var errorFrame = frames[frameCount - 1];
+                var errorInstr = errorFrame.IP;
+                var errorLine = errorFrame.Function.Chunk.Lines[errorInstr];
+                var disassembledInstr = errorFrame.Function.Chunk.DisassembleInstruction(errorInstr);
+                StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
+                if (!string.IsNullOrEmpty(exc.Message))
+                    StdOut.WriteLine($"    {exc.Message}");
+                return InterpretResult.RuntimeError;
+            }
         }
 
         public void Push(Value value)
@@ -222,8 +266,6 @@ namespace SpeedCalc.Core.Runtime
 
         public VirtualMachine()
         {
-            stack = new Value[MaxStackSize];
-            globals = new Dictionary<string, Value>(8);
             SetStdOut(Console.Out);
         }
     }
