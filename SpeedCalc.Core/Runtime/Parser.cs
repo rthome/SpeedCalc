@@ -724,8 +724,6 @@ namespace SpeedCalc.Core.Runtime
 
         void Declaration()
         {
-            if (Match(TokenType.Var))
-                VarDeclaration();
             if (Match(TokenType.Fn))
                 FunctionDeclaration();
             else if (Match(TokenType.Var))
