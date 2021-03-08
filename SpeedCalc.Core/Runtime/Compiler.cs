@@ -1,4 +1,6 @@
-﻿namespace SpeedCalc.Core.Runtime
+﻿using System;
+
+namespace SpeedCalc.Core.Runtime
 {
     public enum FunctionType
     {
@@ -24,10 +26,27 @@
 
         public int ScopeDepth { get; set; }
 
-        public void AddLocal(State state, Token name)
+        public void BeginScope()
+        {
+            ScopeDepth++;
+        }
+
+        public int EndScope()
+        {
+            ScopeDepth--;
+
+            var originalLocalCount = LocalCount;
+            while (LocalCount > 0 && Locals[LocalCount - 1].Depth > ScopeDepth)
+                LocalCount--;
+
+            // Number of discarded locals
+            return originalLocalCount - LocalCount;
+        }
+
+        public void AddLocal(Action<string> errorFn, Token name)
         {
             if (LocalCount == byte.MaxValue)
-                state.Error("Too many locals in function");
+                errorFn("Too many locals in function");
 
             var index = LocalCount++;
             Locals[index].Token = name;

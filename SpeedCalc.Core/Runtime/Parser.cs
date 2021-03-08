@@ -39,17 +39,55 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
+        sealed class LoopState
+        {
+            public int Start { get; set; }
+
+            public int ScopeDepth { get; }
+
+            public RuntimeArray<int> UnresolvedBreaks { get; }
+
+            public void PatchUnresolvedBreaks(Parser parser)
+            {
+                foreach (var breakJump in UnresolvedBreaks)
+                    parser.PatchJump(breakJump);
+            }
+
+            LoopState(int loopStart, int scopeDepth, RuntimeArray<int> unresolvedBreaks)
+            {
+                Start = loopStart;
+                ScopeDepth = scopeDepth;
+                UnresolvedBreaks = unresolvedBreaks ?? throw new ArgumentNullException(nameof(unresolvedBreaks));
+            }
+
+            public static LoopState Default => new LoopState(-1, 0, new RuntimeArray<int>());
+
+            public static LoopState FromCurrentState(Parser parser) => new LoopState(parser.CurrentCodePosition(), parser.Compiler.ScopeDepth, new RuntimeArray<int>());
+        }
+
         readonly Rule[] ParseRules;
 
-        State state;
+        Scanner Scanner { get; set; }
+
+        Compiler Compiler { get; set; }
+
+        Token Current { get; set; }
+
+        Token Previous { get; set; }
+
+        LoopState InnermostLoop { get; set; } = LoopState.Default;
+
+        bool HadError { get; set; }
+
+        bool PanicMode { get; set; }
 
         #region Utility Functions
 
         void PrintError(Token token, string message)
         {
-            if (state.PanicMode)
+            if (PanicMode)
                 return;
-            state.PanicMode = true;
+            PanicMode = true;
 
             Console.Error.Write($"[line {token.Line}] Error");
             if (token.Type == TokenType.EOF)
@@ -58,35 +96,35 @@ namespace SpeedCalc.Core.Runtime
                 Console.Error.Write($" at {token.Lexeme}");
 
             Console.Error.WriteLine($": {message}");
-            state.HadError = true;
+            HadError = true;
         }
 
-        void Error(string message) => PrintError(state.Previous, message);
+        void Error(string message) => PrintError(Previous, message);
 
-        void ErrorAtCurrent(string message) => PrintError(state.Current, message);
+        void ErrorAtCurrent(string message) => PrintError(Current, message);
 
         void Advance()
         {
-            state.Previous = state.Current;
+            Previous = Current;
             while (true)
             {
-                state.Current = state.Scanner.ScanToken();
-                if (state.Current.Type != TokenType.Error)
+                Current = Scanner.ScanToken();
+                if (Current.Type != TokenType.Error)
                     break;
                 else
-                    ErrorAtCurrent(state.Current.Lexeme);
+                    ErrorAtCurrent(Current.Lexeme);
             }
         }
 
         void Consume(TokenType tokenType, string message)
         {
-            if (state.Current.Type == tokenType)
+            if (Current.Type == tokenType)
                 Advance();
             else
                 ErrorAtCurrent(message);
         }
 
-        bool Check(TokenType type) => state.Current.Type == type;
+        bool Check(TokenType type) => Current.Type == type;
 
         bool Match(TokenType type)
         {
@@ -101,14 +139,14 @@ namespace SpeedCalc.Core.Runtime
 
         void Synchronize()
         {
-            state.PanicMode = false;
+            PanicMode = false;
 
-            while (state.Current.Type != TokenType.EOF)
+            while (Current.Type != TokenType.EOF)
             {
-                if (state.Previous.Type == TokenType.Semicolon)
+                if (Previous.Type == TokenType.Semicolon)
                     return;
 
-                switch (state.Current.Type)
+                switch (Current.Type)
                 {
                     case TokenType.Fn:
                     case TokenType.Var:
@@ -126,7 +164,9 @@ namespace SpeedCalc.Core.Runtime
             }
         }
 
-        Chunk CurrentChunk() => state.Compiler.Function.Chunk;
+        Chunk CurrentChunk() => Compiler.Function.Chunk;
+
+        int CurrentCodePosition() => CurrentChunk().Code.Count;
 
         byte MakeConstant(Value value)
         {
@@ -136,9 +176,7 @@ namespace SpeedCalc.Core.Runtime
             return (byte)constantIndex;
         }
 
-        int CurrentCodePosition() => CurrentChunk().Code.Count;
-
-        void Emit(byte value) => CurrentChunk().Write(value, state.Previous.Line);
+        void Emit(byte value) => CurrentChunk().Write(value, Previous.Line);
 
         void Emit(OpCode value) => Emit((byte)value);
 
@@ -182,20 +220,11 @@ namespace SpeedCalc.Core.Runtime
             CurrentChunk().Code[offset + 1] = (byte)(jump & 0xff);
         }
 
-        void BeginScope()
-        {
-            state.Compiler.ScopeDepth++;
-        }
+        void BeginScope() => Compiler.BeginScope();
 
         void EndScope()
         {
-            state.Compiler.ScopeDepth--;
-
-            var originalLocalCount = state.Compiler.LocalCount;
-            while (state.Compiler.LocalCount > 0 && state.Compiler.Locals[state.Compiler.LocalCount - 1].Depth > state.Compiler.ScopeDepth)
-                state.Compiler.LocalCount--;
-
-            var discardedLocals = originalLocalCount - state.Compiler.LocalCount;
+            var discardedLocals = Compiler.EndScope();
             if (discardedLocals == 1)
                 Emit(OpCode.Pop);
             else if (discardedLocals > 1)
@@ -211,7 +240,7 @@ namespace SpeedCalc.Core.Runtime
         void ParsePrecedence(Precedence precedence)
         {
             Advance();
-            var prefixRule = GetRule(state.Previous.Type).Prefix;
+            var prefixRule = GetRule(Previous.Type).Prefix;
             if (prefixRule is null)
                 Error("Expect expression");
             else
@@ -219,10 +248,10 @@ namespace SpeedCalc.Core.Runtime
                 var canAssign = precedence <= Precedence.Assignment;
                 prefixRule(canAssign);
 
-                while (precedence <= GetRule(state.Current.Type).Precedence)
+                while (precedence <= GetRule(Current.Type).Precedence)
                 {
                     Advance();
-                    var infixRule = GetRule(state.Previous.Type).Infix;
+                    var infixRule = GetRule(Previous.Type).Infix;
                     infixRule(canAssign);
                 }
 
@@ -233,11 +262,11 @@ namespace SpeedCalc.Core.Runtime
 
         int ResolveLocal(Token name)
         {
-            for (int i = state.Compiler.LocalCount - 1; i >= 0; i--)
+            for (int i = Compiler.LocalCount - 1; i >= 0; i--)
             {
-                if (state.Compiler.Locals[i].Token.Lexeme == name.Lexeme)
+                if (Compiler.Locals[i].Token.Lexeme == name.Lexeme)
                 {
-                    if (state.Compiler.Locals[i].Depth == -1)
+                    if (Compiler.Locals[i].Depth == -1)
                         Error("Cannot read variable in its own initializer");
                     return i;
                 }
@@ -252,21 +281,21 @@ namespace SpeedCalc.Core.Runtime
 
         void DeclareVariable()
         {
-            if (state.Compiler.ScopeDepth == 0)
+            if (Compiler.ScopeDepth == 0)
                 return;
 
-            var name = state.Previous;
-            for (int i = state.Compiler.LocalCount - 1; i >= 0; i--)
+            var name = Previous;
+            for (int i = Compiler.LocalCount - 1; i >= 0; i--)
             {
-                var local = state.Compiler.Locals[i];
-                if (local.Depth != -1 && local.Depth < state.Compiler.ScopeDepth)
+                var local = Compiler.Locals[i];
+                if (local.Depth != -1 && local.Depth < Compiler.ScopeDepth)
                     break;
 
                 if (name.Lexeme == local.Token.Lexeme)
                     Error("Variable with this name already defined in this scope");
             }
 
-            state.Compiler.AddLocal(state, name);
+            Compiler.AddLocal(Error, name);
         }
 
         byte ParseVariable(string message)
@@ -274,17 +303,17 @@ namespace SpeedCalc.Core.Runtime
             Consume(TokenType.Identifier, message);
 
             DeclareVariable();
-            if (state.Compiler.ScopeDepth > 0)
+            if (Compiler.ScopeDepth > 0)
                 return 0;
 
-            return IdentifierConstant(state.Previous);
+            return IdentifierConstant(Previous);
         }
 
-        void MarkInitialized() => state.Compiler.Locals[state.Compiler.LocalCount - 1].Depth = state.Compiler.ScopeDepth;
+        void MarkInitialized() => Compiler.Locals[Compiler.LocalCount - 1].Depth = Compiler.ScopeDepth;
 
         void DefineVariable(byte global)
         {
-            if (state.Compiler.ScopeDepth > 0)
+            if (Compiler.ScopeDepth > 0)
             {
                 MarkInitialized();
                 return;
@@ -317,13 +346,13 @@ namespace SpeedCalc.Core.Runtime
 
         void Number(bool canAssign)
         {
-            var value = decimal.Parse(state.Previous.Lexeme, CultureInfo.InvariantCulture);
+            var value = decimal.Parse(Previous.Lexeme, CultureInfo.InvariantCulture);
             EmitConstant(Values.Number(value));
         }
 
         void Unary(bool canAssign)
         {
-            var operatorType = state.Previous.Type;
+            var operatorType = Previous.Type;
 
             ParsePrecedence(Precedence.Unary);
 
@@ -343,7 +372,7 @@ namespace SpeedCalc.Core.Runtime
 
         void Binary(bool canAssign)
         {
-            var operatorType = state.Previous.Type;
+            var operatorType = Previous.Type;
 
             var rule = GetRule(operatorType);
             ParsePrecedence(rule.Precedence + 1);
@@ -397,7 +426,7 @@ namespace SpeedCalc.Core.Runtime
 
         void Literal(bool canAssign)
         {
-            switch (state.Previous.Type)
+            switch (Previous.Type)
             {
                 case TokenType.True:
                     Emit(OpCode.True);
@@ -458,7 +487,7 @@ namespace SpeedCalc.Core.Runtime
 
         void Variable(bool canAssign)
         {
-            NamedVariable(state.Previous, canAssign);
+            NamedVariable(Previous, canAssign);
         }
 
         void Grouping(bool canAssign)
@@ -500,8 +529,8 @@ namespace SpeedCalc.Core.Runtime
             else
                 ExpressionStatement();
 
-            var surroundingLoopState = state.InnermostLoop;
-            state.InnermostLoop = LoopState.FromCurrentState(state);
+            var surroundingLoopState = InnermostLoop;
+            InnermostLoop = LoopState.FromCurrentState(this);
 
             // Condition
             var exitJump = -1;
@@ -524,14 +553,14 @@ namespace SpeedCalc.Core.Runtime
                 Emit(OpCode.Pop);
                 Consume(TokenType.Colon, "Expect ':' after for clauses");
 
-                EmitLoop(state.InnermostLoop.Start);
-                state.InnermostLoop.Start = incrementStart;
+                EmitLoop(InnermostLoop.Start);
+                InnermostLoop.Start = incrementStart;
                 PatchJump(bodyJump);
             }
 
             Statement();
 
-            EmitLoop(state.InnermostLoop.Start);
+            EmitLoop(InnermostLoop.Start);
 
             if (exitJump != -1)
             {
@@ -539,8 +568,8 @@ namespace SpeedCalc.Core.Runtime
                 Emit(OpCode.Pop); // Condition, if Pop has been jumped over above
             }
 
-            state.InnermostLoop.PatchUnresolvedBreaks(state);
-            state.InnermostLoop = surroundingLoopState;
+            InnermostLoop.PatchUnresolvedBreaks(this);
+            InnermostLoop = surroundingLoopState;
 
             EndScope();
         }
@@ -576,8 +605,8 @@ namespace SpeedCalc.Core.Runtime
 
         void WhileStatement()
         {
-            var surroundingLoopState = state.InnermostLoop;
-            state.InnermostLoop = LoopState.FromCurrentState(state);
+            var surroundingLoopState = InnermostLoop;
+            InnermostLoop = LoopState.FromCurrentState(this);
 
             Expression();
             Consume(TokenType.Colon, "Expect ':' after condition");
@@ -587,48 +616,48 @@ namespace SpeedCalc.Core.Runtime
             Emit(OpCode.Pop);
             Statement();
 
-            EmitLoop(state.InnermostLoop.Start);
+            EmitLoop(InnermostLoop.Start);
 
             PatchJump(exitJump);
             Emit(OpCode.Pop);
 
-            state.InnermostLoop.PatchUnresolvedBreaks(state);
-            state.InnermostLoop = surroundingLoopState;
+            InnermostLoop.PatchUnresolvedBreaks(this);
+            InnermostLoop = surroundingLoopState;
         }
 
         void ContinueStatement()
         {
-            if (state.InnermostLoop.Start == -1)
+            if (InnermostLoop.Start == -1)
                 Error("Can't use continue outside of a loop");
 
             Consume(TokenType.Semicolon, "Expect ';' after continue");
 
             // Discard locals
             var popCount = 0;
-            for (var i = state.Compiler.LocalCount - 1; i >= 0 && state.Compiler.Locals[i].Depth > state.InnermostLoop.ScopeDepth; i--)
+            for (var i = Compiler.LocalCount - 1; i >= 0 && Compiler.Locals[i].Depth > InnermostLoop.ScopeDepth; i--)
                 popCount++;
             if (popCount > 0)
                 Emit(OpCode.PopN, (byte)popCount);
 
-            EmitLoop(state.InnermostLoop.Start);
+            EmitLoop(InnermostLoop.Start);
         }
 
         void BreakStatement()
         {
-            if (state.InnermostLoop.Start == -1)
+            if (InnermostLoop.Start == -1)
                 Error("Can't use break outside of a loop");
 
             Consume(TokenType.Semicolon, "Expect ';' after break");
 
             // Discard locals
             var popCount = 0;
-            for (var i = state.Compiler.LocalCount - 1; i >= 0 && state.Compiler.Locals[i].Depth > state.InnermostLoop.ScopeDepth; i--)
+            for (var i = Compiler.LocalCount - 1; i >= 0 && Compiler.Locals[i].Depth > InnermostLoop.ScopeDepth; i--)
                 popCount++;
             if (popCount > 0)
                 Emit(OpCode.PopN, (byte)popCount);
 
             var breakJump = EmitJump(OpCode.Jump);
-            state.InnermostLoop.UnresolvedBreaks.Write(breakJump);
+            InnermostLoop.UnresolvedBreaks.Write(breakJump);
         }
 
         void Statement()
@@ -672,7 +701,7 @@ namespace SpeedCalc.Core.Runtime
             else
                 Statement();
 
-            if (state.PanicMode)
+            if (PanicMode)
                 Synchronize();
         }
 
@@ -683,23 +712,20 @@ namespace SpeedCalc.Core.Runtime
             EmitReturn();
 
 #if DEBUG
-            if (!state.HadError)
+            if (!HadError)
             {
-                foreach (var line in state.Compiler.Function.DisassembleFunction())
+                foreach (var line in Compiler.Function.DisassembleFunction())
                     Console.WriteLine(line);
             }
 #endif
 
-            return state.Compiler.Function;
+            return Compiler.Function;
         }
 
         public Function Compile(string source)
         {
-            state = new State
-            {
-                Scanner = new Scanner(source ?? throw new ArgumentNullException(nameof(source))),
-                Compiler = new Compiler(FunctionType.Script),
-            };
+            Scanner = new Scanner(source ?? throw new ArgumentNullException(nameof(source)));
+            Compiler = new Compiler(FunctionType.Script);
 
             Advance();
 
@@ -707,7 +733,7 @@ namespace SpeedCalc.Core.Runtime
                 Declaration();
 
             var function = EndCompile();
-            return state.HadError ? null : function;
+            return HadError ? null : function;
         }
 
         public Parser()
