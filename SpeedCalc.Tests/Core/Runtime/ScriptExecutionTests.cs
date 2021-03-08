@@ -343,7 +343,7 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void RunsAndWithOr() // 'and' has higher precedence
         {
-            RunScriptAndExpect("false", "print false or true and false;"); 
+            RunScriptAndExpect("false", "print false or true and false;");
             RunScriptAndExpect("true", "print 1 and true or false;");
         }
 
@@ -623,12 +623,14 @@ namespace SpeedCalc.Tests.Core.Runtime
         public void RunsPrintExpressionInFunction()
         {
             RunScriptAndExpect("9", "fn func() { print (1+2)*3; } func();");
+            RunScriptAndExpect("9", "fn func() = (1+2)*3; print func();");
         }
 
         [Fact]
         public void RunsPrintResultOfExpressionInFunction()
         {
             RunScriptAndExpect("10", "fn add5and5() { return 5+5; } print add5and5();");
+            RunScriptAndExpect("10", "fn add5and5() = 5+5; print add5and5();");
         }
 
         [Fact]
@@ -637,6 +639,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             RunScriptAndExpect("1", "fn two() { print 1; } fn one() { two(); } one();");
             RunScriptAndExpect("2", "fn three() { print 2; } fn two() { three(); } fn one() { two(); } one();");
             RunScriptAndExpect("3", "fn four() { print 3; } fn three() { four(); } fn two() { three(); } fn one() { two(); } one();");
+
+            RunScriptAndExpect("4", "fn three() = 4; fn two() { return three(); } fn one() = two(); one();");
+            RunScriptAndExpect("5", "fn three() = 5; fn two() = three(); fn one() = two(); one();");
         }
 
         [Fact]
@@ -647,6 +652,13 @@ namespace SpeedCalc.Tests.Core.Runtime
                     fn inner() {
                         return 123;
                     }
+                    return inner();
+                }
+                print outer();");
+
+            RunScriptAndExpect("123", @"
+                fn outer() {
+                    fn inner() = 123;
                     return inner();
                 }
                 print outer();");

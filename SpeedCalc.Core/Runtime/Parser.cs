@@ -697,8 +697,18 @@ namespace SpeedCalc.Core.Runtime
             Consume(TokenType.ParenLeft, "Expect '(' after function name");
             Consume(TokenType.ParenRight, "Expect ')' after parameters");
 
-            Consume(TokenType.BraceLeft, "Expect '{' before function body");
-            Block();
+            if (Match(TokenType.Equal))
+            {
+                Consume(TokenType.Equal, "Expect '=' before function expression body");
+                Expression();
+            }
+            else if (Match(TokenType.BraceLeft))
+            {
+                Consume(TokenType.BraceLeft, "Expect '{' before function body");
+                Block();
+            }
+            else
+                ErrorAtCurrent("Expect block body or expression body after function name");
 
             var function = EndCompile();
             EmitConstant(Values.Function(function));
