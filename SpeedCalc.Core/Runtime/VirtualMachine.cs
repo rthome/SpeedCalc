@@ -202,7 +202,8 @@ namespace SpeedCalc.Core.Runtime
             if (source is null)
                 throw new ArgumentNullException(nameof(source));
 
-            var function = Parser.Compile(source);
+            var parser = new Parser();
+            var function = parser.Compile(source);
             if (function is null)
                 return InterpretResult.CompileError;
 

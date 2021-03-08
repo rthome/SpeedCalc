@@ -105,7 +105,8 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             public static Seq Compile(string source, int initialOffset = 0, bool checkToEnd = true)
             {
-                var function = Parser.Compile(source);
+                var parser = new Parser();
+                var function = parser.Compile(source);
                 Assert.NotNull(function);
 
 #if DEBUG

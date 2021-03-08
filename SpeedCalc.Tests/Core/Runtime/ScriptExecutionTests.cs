@@ -10,7 +10,8 @@ namespace SpeedCalc.Tests.Core.Runtime
     {
         static void CompilerErrors(string source)
         {
-            var function = Parser.Compile(source);
+            var parser = new Parser();
+            var function = parser.Compile(source);
             Assert.Null(function);
         }
 
