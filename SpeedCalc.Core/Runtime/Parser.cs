@@ -309,7 +309,12 @@ namespace SpeedCalc.Core.Runtime
             return IdentifierConstant(Previous);
         }
 
-        void MarkInitialized() => Compiler.Locals[Compiler.LocalCount - 1].Depth = Compiler.ScopeDepth;
+        void MarkInitialized()
+        {
+            if (Compiler.ScopeDepth == 0)
+                return;
+            Compiler.Locals[Compiler.LocalCount - 1].Depth = Compiler.ScopeDepth;
+        }
 
         void DefineVariable(byte global)
         {
@@ -684,6 +689,29 @@ namespace SpeedCalc.Core.Runtime
                 ExpressionStatement();
         }
 
+        void Function(FunctionType functionType)
+        {
+            Compiler = new Compiler(Compiler, functionType, Previous.Lexeme);
+            Compiler.BeginScope();
+
+            Consume(TokenType.ParenLeft, "Expect '(' after function name");
+            Consume(TokenType.ParenRight, "Expect ')' after parameters");
+
+            Consume(TokenType.BraceLeft, "Expect '{' before function body");
+            Block();
+
+            var function = EndCompile();
+            EmitConstant(Values.Function(function));
+        }
+
+        void FunctionDeclaration()
+        {
+            var global = ParseVariable("Expect function name");
+            MarkInitialized();
+            Function(FunctionType.Function);
+            DefineVariable(global);
+        }
+
         void VarDeclaration()
         {
             var global = ParseVariable("Expect variable name");
@@ -697,6 +725,10 @@ namespace SpeedCalc.Core.Runtime
         void Declaration()
         {
             if (Match(TokenType.Var))
+                VarDeclaration();
+            if (Match(TokenType.Fn))
+                FunctionDeclaration();
+            else if (Match(TokenType.Var))
                 VarDeclaration();
             else
                 Statement();
@@ -725,7 +757,7 @@ namespace SpeedCalc.Core.Runtime
         public Function Compile(string source)
         {
             Scanner = new Scanner(source ?? throw new ArgumentNullException(nameof(source)));
-            Compiler = new Compiler(FunctionType.Script);
+            Compiler = new Compiler(null, FunctionType.Script);
 
             Advance();
 

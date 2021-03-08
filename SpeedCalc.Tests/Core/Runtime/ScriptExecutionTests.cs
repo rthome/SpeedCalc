@@ -606,5 +606,59 @@ namespace SpeedCalc.Tests.Core.Runtime
             CompilerErrors("{ break; }");
             CompilerErrors("if true: break;");
         }
+
+        [Fact]
+        public void RunsEmptyFunctionDefinition()
+        {
+            RunScript("fn test() {}");
+        }
+
+        [Fact]
+        public void RunsPrintConstantInFunction()
+        {
+            RunScriptAndExpect("1", "fn test() { print 1; } test();");
+        }
+
+        [Fact]
+        public void RunsPrintExpressionInFunction()
+        {
+            RunScriptAndExpect("9", "fn func() { print (1+2)*3; } func();");
+        }
+
+        [Fact]
+        public void RunsPrintResultOfExpressionInFunction()
+        {
+            RunScriptAndExpect("10", "fn add5and5() { return 5+5; } print add5and5();");
+        }
+
+        [Fact]
+        public void RunPrintFromNestedFunctionCalls()
+        {
+            RunScriptAndExpect("1", "fn two() { print 1; } fn one() { two(); } one();");
+            RunScriptAndExpect("2", "fn three() { print 2; } fn two() { three(); } fn one() { two(); } one();");
+            RunScriptAndExpect("3", "fn four() { print 3; } fn three() { four(); } fn two() { three(); } fn one() { two(); } one();");
+        }
+
+        [Fact]
+        public void RunsNestedFunctionDefinitions()
+        {
+            RunScriptAndExpect("123", @"
+                fn outer() {
+                    fn inner() {
+                        return 123;
+                    }
+                    return inner();
+                }
+                print outer();");
+
+            RunScriptAndExpect("123", @"
+                fn outer() {
+                    fn inner() {
+                        print 123;
+                    }
+                    inner();
+                }
+                outer();");
+        }
     }
 }

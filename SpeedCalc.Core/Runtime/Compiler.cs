@@ -16,15 +16,17 @@ namespace SpeedCalc.Core.Runtime
 
     public sealed class Compiler
     {
-        public Function Function { get; set; }
+        public Compiler Enclosing { get; }
 
-        public FunctionType FunctionType { get; set; }
+        public Function Function { get; }
+
+        public FunctionType FunctionType { get; }
 
         public Local[] Locals { get; } = new Local[byte.MaxValue + 1];
 
-        public int LocalCount { get; set; }
+        public int LocalCount { get; private set; }
 
-        public int ScopeDepth { get; set; }
+        public int ScopeDepth { get; private set; }
 
         public void BeginScope()
         {
@@ -53,10 +55,11 @@ namespace SpeedCalc.Core.Runtime
             Locals[index].Depth = -1;
         }
 
-        public Compiler(FunctionType type)
+        public Compiler(Compiler enclosing, FunctionType type, string functionName = "")
         {
+            Enclosing = enclosing;
             FunctionType = type;
-            Function = new Function(string.Empty, 0);
+            Function = new Function(functionName, 0);
 
             var local = Locals[LocalCount++];
             local.Depth = 0;
