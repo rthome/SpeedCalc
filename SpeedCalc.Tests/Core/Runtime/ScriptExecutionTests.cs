@@ -681,5 +681,25 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Contains("testFunc3", RunScriptAndCaptureOutput("fn testFunc3(a, b, c) {} print testFunc3;"));
             Assert.Contains("testFunc4", RunScriptAndCaptureOutput("fn testFunc4(a, b, c) = 1; print testFunc4;"));
         }
+
+        [Fact]
+        public void RunsFunctionsWithParameters()
+        {
+            RunScriptAndExpect("true", "fn printArg(arg) { print arg; } printArg(true);");
+            RunScriptAndExpect("3", "fn add(a, b) { return a+b; } print add(1,2);");
+            RunScriptAndExpect("3", "fn add(a, b) = a+b; print add(1,2);");
+        }
+
+        [Fact]
+        public void RunsFucntionWithExpressionInParameters()
+        {
+            RunScriptAndExpect("15", "fn add(a, b, c) { return a+b+c; } print add(1+2,3,3*3);");
+            RunScriptAndExpect("15", "fn add(a, b, c) = a+b+c; print add(1+2,3,3*3);");
+
+            RunScriptAndExpect("8", "fn add(a, b, c) { return a+b+c; } print add(add(1,1,1),2,3);");
+            RunScriptAndExpect("8", "fn add(a, b, c) = a+b+c; print add(add(1,1,1),2,3);");
+
+            RunScriptAndExpect("20", "fn add(a, b, c) = a+b+c; print add(add(1,1,1),2,add(1,2,add(3,4,5)));");
+        }
     }
 }

@@ -327,6 +327,25 @@ namespace SpeedCalc.Core.Runtime
             Emit(OpCode.DefineGlobal, global);
         }
 
+        byte ArgumentList()
+        {
+            byte argCount = 0;
+            if (!Check(TokenType.ParenRight))
+            {
+                do
+                {
+                    Expression();
+                    if (argCount == byte.MaxValue)
+                        Error("Can't pass more than 255 arguments to a function");
+                    argCount++;
+                }
+                while (Match(TokenType.Comma));
+            }
+
+            Consume(TokenType.ParenRight, "Expect ')' after argument list");
+            return argCount;
+        }
+
         void And(bool canAssign)
         {
             var endJump = EmitJump(OpCode.JumpIfFalse);
@@ -427,6 +446,12 @@ namespace SpeedCalc.Core.Runtime
                 default:
                     return;
             }
+        }
+
+        void Call(bool canAssign)
+        {
+            var argCount = ArgumentList();
+            Emit(OpCode.Call, argCount);
         }
 
         void Literal(bool canAssign)
@@ -796,7 +821,7 @@ namespace SpeedCalc.Core.Runtime
             {
                 new Rule(null,     null,   Precedence.None),       // Error
                 new Rule(null,     null,   Precedence.None),       // EOF
-                new Rule(Grouping, null,   Precedence.None),       // ParenLeft
+                new Rule(Grouping, Call,   Precedence.None),       // ParenLeft
                 new Rule(null,     null,   Precedence.None),       // ParenRight
                 new Rule(null,     null,   Precedence.None),       // BraceLeft
                 new Rule(null,     null,   Precedence.None),       // BraceRight

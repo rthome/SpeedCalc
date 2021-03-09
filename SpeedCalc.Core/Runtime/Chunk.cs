@@ -30,6 +30,7 @@ namespace SpeedCalc.Core.Runtime
         Jump,
         JumpIfFalse,
         Loop,
+        Call,
         Return,
     };
 
