@@ -672,5 +672,14 @@ namespace SpeedCalc.Tests.Core.Runtime
                 }
                 outer();");
         }
+
+        [Fact]
+        public void RunsPrintingFunctionDefinition()
+        {
+            Assert.Contains("testFunc1", RunScriptAndCaptureOutput("fn testFunc1() {} print testFunc1;"));
+            Assert.Contains("testFunc2", RunScriptAndCaptureOutput("fn testFunc2() = 1; print testFunc2;"));
+            Assert.Contains("testFunc3", RunScriptAndCaptureOutput("fn testFunc3(a, b, c) {} print testFunc3;"));
+            Assert.Contains("testFunc4", RunScriptAndCaptureOutput("fn testFunc4(a, b, c) = 1; print testFunc4;"));
+        }
     }
 }

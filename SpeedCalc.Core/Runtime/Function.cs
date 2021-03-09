@@ -6,7 +6,7 @@ namespace SpeedCalc.Core.Runtime
     {
         public string Name { get; }
 
-        public int Arity { get; }
+        public int Arity { get; set; }
 
         public Chunk Chunk { get; }
 

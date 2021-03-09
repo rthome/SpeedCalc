@@ -695,20 +695,32 @@ namespace SpeedCalc.Core.Runtime
             Compiler.BeginScope();
 
             Consume(TokenType.ParenLeft, "Expect '(' after function name");
+            if (!Check(TokenType.ParenRight))
+            {
+                do
+                {
+                    Compiler.Function.Arity++;
+                    if (Compiler.Function.Arity > byte.MaxValue)
+                        ErrorAtCurrent("Can't have more than 255 parameters in function definition");
+
+                    var paramConstant = ParseVariable("Expect parameter name");
+                    DefineVariable(paramConstant);
+                }
+                while (Match(TokenType.Comma));
+            }
             Consume(TokenType.ParenRight, "Expect ')' after parameters");
 
             if (Match(TokenType.Equal))
             {
-                Consume(TokenType.Equal, "Expect '=' before function expression body");
                 Expression();
+                Consume(TokenType.Semicolon, "Expect ';' after function body expression");
             }
             else if (Match(TokenType.BraceLeft))
             {
-                Consume(TokenType.BraceLeft, "Expect '{' before function body");
                 Block();
             }
             else
-                ErrorAtCurrent("Expect block body or expression body after function name");
+                ErrorAtCurrent("Expect '{' or '=' after function name");
 
             var function = EndCompile();
             EmitConstant(Values.Function(function));
@@ -759,7 +771,9 @@ namespace SpeedCalc.Core.Runtime
             }
 #endif
 
-            return Compiler.Function;
+            var function = Compiler.Function;
+            Compiler = Compiler.Enclosing;
+            return function;
         }
 
         public Function Compile(string source)
