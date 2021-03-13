@@ -1,5 +1,6 @@
 ﻿using SpeedCalc.Core.Runtime;
 
+using System;
 using System.IO;
 
 using Xunit;
@@ -665,8 +666,8 @@ namespace SpeedCalc.Tests.Core.Runtime
             RunScriptAndExpect("2", "fn three() { print 2; } fn two() { three(); } fn one() { two(); } one();");
             RunScriptAndExpect("3", "fn four() { print 3; } fn three() { four(); } fn two() { three(); } fn one() { two(); } one();");
 
-            RunScriptAndExpect("4", "fn three() = 4; fn two() { return three(); } fn one() = two(); one();");
-            RunScriptAndExpect("5", "fn three() = 5; fn two() = three(); fn one() = two(); one();");
+            RunScriptAndExpect("4", "fn three() = 4; fn two() { print three(); } fn one() = two(); one();");
+            RunScriptAndExpect("5", "fn three() = 5; fn two() = three(); fn one() = two(); print one();");
         }
 
         [Fact]
@@ -755,9 +756,30 @@ namespace SpeedCalc.Tests.Core.Runtime
                            fn c() = c(1, 2, 3);
                            a();";
 
-            StringWriter output = new StringWriter();
+            var output = new StringWriter();
             RuntimeErrors(script, output);
+
             var result = output.ToString();
+            Assert.Contains("fn a", result);
+            Assert.Contains("fn b", result);
+            Assert.Contains("fn c", result);
+        }
+
+        [Fact]
+        public void VMAbortsUnrestrictedRecursionWithStackOverflow()
+        {
+            var output = new StringWriter();
+            RuntimeErrors("fn a() { b(); } fn b() = a(); a();", output);
+
+            var result = output.ToString();
+            Assert.Contains("stack", result, StringComparison.InvariantCultureIgnoreCase);
+            Assert.Contains("overflow", result, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        [Fact]
+        public void ErrorsOnTopLevelReturn()
+        {
+            CompilerErrors("return true;");
         }
     }
 }

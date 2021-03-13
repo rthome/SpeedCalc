@@ -68,9 +68,9 @@ namespace SpeedCalc.Core.Runtime
             FunctionType = type;
             Function = new Function(functionName, 0);
 
-            var local = Locals[LocalCount++];
-            local.Depth = 0;
-            local.Token = new Token(TokenType.Error, string.Empty, 0);
+            var compilerReservedLocal = Locals[LocalCount++];
+            compilerReservedLocal.Depth = 0;
+            compilerReservedLocal.Token = new Token(TokenType.Error, string.Empty, 0);
         }
     }
 }

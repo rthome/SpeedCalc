@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace SpeedCalc.Core.Runtime
 {
@@ -13,13 +14,13 @@ namespace SpeedCalc.Core.Runtime
 
     public sealed class VirtualMachine
     {
-        struct CallFrame
+        class CallFrame
         {
-            public Function Function;
+            public Function Function { get; set; }
 
-            public int IP;
+            public int IP { get; set; }
 
-            public int StackBase;
+            public int StackBase { get; set; }
         }
 
         const int MaxCallFrameDepth = 256;
@@ -30,37 +31,46 @@ namespace SpeedCalc.Core.Runtime
         readonly Dictionary<string, Value> globals = new Dictionary<string, Value>();
 
         int frameCount = 0;
-        int stackTopOffset = 0;
+        int stackPointer = 0;
+
+        CallFrame frame;
 
         public TextWriter StdOut { get; private set; }
 
+        Chunk CurrentChunk => frame.Function.Chunk;
+
+        RuntimeArray<byte> Code => CurrentChunk.Code;
+
+        static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
+
+        byte ReadByte() => Code[frame.IP++];
+
+        ushort ReadShort()
+        {
+            frame.IP += 2;
+            return (ushort)(Code[frame.IP - 2] << 8 | Code[frame.IP - 1]);
+        }
+
+        Value ReadConstant() => CurrentChunk.Constants[ReadByte()];
+
+        void BinaryOp(Func<decimal, decimal, Value> op)
+        {
+            if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
+                throw new RuntimeExecutionException("Operands must be numbers", CreateStackTrace());
+            var b = Pop().AsNumber();
+            var a = Pop().AsNumber();
+            var result = op(a, b);
+            Push(result);
+        }
+
         InterpretResult Run()
         {
-            CallFrame frame = frames[frameCount - 1];
-
-            var chunk = frame.Function.Chunk;
-            var code = frame.Function.Chunk.Code;
-
-            byte ReadByte() => code[frame.IP++];
-            ushort ReadShort() { frame.IP += 2; return (ushort)(code[frame.IP - 2] << 8 | code[frame.IP - 1]); };
-            Value ReadConstant() => chunk.Constants[ReadByte()];
-
-            void BinaryOp(Func<decimal, decimal, Value> op)
-            {
-                if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
-                    throw new RuntimeExecutionException("Operands must be numbers", CreateStackTrace());
-                var b = Pop().AsNumber();
-                var a = Pop().AsNumber();
-                var result = op(a, b);
-                Push(result);
-            }
-
-            static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
+            frame = frames[frameCount - 1];
 
             while (true)
             {
 #if TRACE
-                System.Diagnostics.Debug.WriteLine(chunk.DisassembleInstruction(frame.IP));
+                System.Diagnostics.Debug.WriteLine(CurrentChunk.DisassembleInstruction(frame.IP));
 #endif
 
                 var instruction = (OpCode)ReadByte();
@@ -188,13 +198,57 @@ namespace SpeedCalc.Core.Runtime
                             frame.IP -= offset;
                         }
                         break;
+                    case OpCode.Call:
+                        {
+                            var argCount = ReadByte();
+                            CallValue(Peek(argCount), argCount);
+                            frame = frames[frameCount - 1];
+                        }
+                        break;
                     case OpCode.Return:
-                        return InterpretResult.Success;
+                        {
+                            var result = Pop();
+                            frameCount--;
+                            if (frameCount == 0)
+                            {
+                                Pop();
+                                return InterpretResult.Success;
+                            }
+
+                            stackPointer = frame.StackBase;
+                            Push(result);
+
+                            frame = frames[frameCount - 1];
+                        }
+                        break;
 
                     default:
                         throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {frame.IP,4:D4}", CreateStackTrace());
                 }
             }
+        }
+
+        void Call(Function function, int argCount)
+        {
+            if (function.Arity != argCount)
+                throw new RuntimeExecutionException($"Function {function} expects {function.Arity} arguments but received {argCount}", CreateStackTrace());
+            if (frameCount == MaxCallFrameDepth)
+                throw new RuntimeExecutionException("Stack overflow", CreateStackTrace());
+
+            frames[frameCount++] = new CallFrame
+            {
+                Function = function,
+                IP = 0,
+                StackBase = stackPointer - argCount - 1,
+            };
+        }
+
+        void CallValue(Value callee, int argCount)
+        {
+            if (callee.IsFunction())
+                Call(callee.AsFunction(), argCount);
+            else
+                throw new RuntimeExecutionException($"Can only call functions - received '{callee}' instead", CreateStackTrace());
         }
 
         public InterpretResult Interpret(string source)
@@ -251,28 +305,28 @@ namespace SpeedCalc.Core.Runtime
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            stack[stackTopOffset++] = value;
+            stack[stackPointer++] = value;
         }
 
         public Value Pop()
         {
-            stackTopOffset--;
-            if (stackTopOffset < 0)
+            stackPointer--;
+            if (stackPointer < 0)
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
 
-            return stack[stackTopOffset];
+            return stack[stackPointer];
         }
 
         public void PopN(int count)
         {
-            stackTopOffset -= count;
-            if (stackTopOffset < 0)
+            stackPointer -= count;
+            if (stackPointer < 0)
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
         }
 
         public Value Peek(int distance = 0)
         {
-            var index = stackTopOffset - 1 - distance;
+            var index = stackPointer - 1 - distance;
             if (index < 0)
                 throw new RuntimeExecutionException("Attempt to peek beyond end of stack", CreateStackTrace());
 

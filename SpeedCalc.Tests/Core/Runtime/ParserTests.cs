@@ -89,7 +89,10 @@ namespace SpeedCalc.Tests.Core.Runtime
                 public void Test()
                 {
                     if (toEnd)
+                    {
+                        Instr(OpCode.False);
                         Instr(OpCode.Return);
+                    }
 
                     foreach (var op in ops)
                         op();

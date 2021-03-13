@@ -186,7 +186,11 @@ namespace SpeedCalc.Core.Runtime
             Emit(arg);
         }
 
-        void EmitReturn() => Emit(OpCode.Return);
+        void EmitReturn()
+        {
+            Emit(OpCode.False); // Implicit return value
+            Emit(OpCode.Return);
+        }
 
         void EmitConstant(Value value) => Emit(OpCode.Constant, MakeConstant(value));
 
@@ -690,6 +694,21 @@ namespace SpeedCalc.Core.Runtime
             InnermostLoop.UnresolvedBreaks.Write(breakJump);
         }
 
+        void ReturnStatement()
+        {
+            if (Compiler.FunctionType == FunctionType.Script)
+                Error("Can't return from top-level code");
+
+            if (Match(TokenType.Semicolon))
+                EmitReturn();
+            else
+            {
+                Expression();
+                Consume(TokenType.Semicolon, "Expect ';' after return value");
+                Emit(OpCode.Return);
+            }
+        }
+
         void Statement()
         {
             if (Match(TokenType.Print))
@@ -704,6 +723,8 @@ namespace SpeedCalc.Core.Runtime
                 ContinueStatement();
             else if (Match(TokenType.Break))
                 BreakStatement();
+            else if (Match(TokenType.Return))
+                ReturnStatement();
             else if (Match(TokenType.BraceLeft))
             {
                 BeginScope();
@@ -739,6 +760,7 @@ namespace SpeedCalc.Core.Runtime
             {
                 Expression();
                 Consume(TokenType.Semicolon, "Expect ';' after function body expression");
+                Emit(OpCode.Return);
             }
             else if (Match(TokenType.BraceLeft))
             {
@@ -792,7 +814,7 @@ namespace SpeedCalc.Core.Runtime
             if (!HadError)
             {
                 foreach (var line in Compiler.Function.DisassembleFunction())
-                    Console.WriteLine(line);
+                    System.Diagnostics.Debug.WriteLine(line);
             }
 #endif
 
