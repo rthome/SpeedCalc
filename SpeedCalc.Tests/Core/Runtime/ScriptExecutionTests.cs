@@ -8,16 +8,27 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
-        static void CompilerErrors(string source)
-        {
-            var parser = new Parser();
-            var function = parser.Compile(source);
-            Assert.Null(function);
-        }
-
-        static void RunScript(string source)
+        static void CompilerErrors(string source, TextWriter output = null)
         {
             var vm = new VirtualMachine();
+            if (output is not null)
+                vm.SetStdOut(output);
+            Assert.Equal(InterpretResult.CompileError, vm.Interpret(source));
+        }
+
+        static void RuntimeErrors(string source, TextWriter output = null)
+        {
+            var vm = new VirtualMachine();
+            if (output is not null)
+                vm.SetStdOut(output);
+            Assert.Equal(InterpretResult.RuntimeError, vm.Interpret(source));
+        }
+
+        static void RunScript(string source, TextWriter output = null)
+        {
+            var vm = new VirtualMachine();
+            if (output is not null)
+                vm.SetStdOut(output);
             Assert.Equal(InterpretResult.Success, vm.Interpret(source));
         }
 
@@ -614,6 +625,20 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void RunsEmptyFunctionCall()
+        {
+            RunScript("fn test() {} test();");
+        }
+
+        [Fact]
+        public void RunsEmptyScopedFunctionCalls()
+        {
+            RunScript("fn test() {} { test(); }");
+            RunScript("{ fn test() {} test(); }");
+            RunScript("{ fn test() {} { test(); } }");
+        }
+
+        [Fact]
         public void RunsPrintConstantInFunction()
         {
             RunScriptAndExpect("1", "fn test() { print 1; } test();");
@@ -700,6 +725,39 @@ namespace SpeedCalc.Tests.Core.Runtime
             RunScriptAndExpect("8", "fn add(a, b, c) = a+b+c; print add(add(1,1,1),2,3);");
 
             RunScriptAndExpect("20", "fn add(a, b, c) = a+b+c; print add(add(1,1,1),2,add(1,2,add(3,4,5)));");
+        }
+
+        [Fact]
+        public void ErrorsOnCallToNonFunctionValue()
+        {
+            RuntimeErrors("var v = 1; v();");
+            RuntimeErrors("var v = true; v();");
+            RuntimeErrors("var a = 1; var b = a; b();");
+        }
+
+        [Fact]
+        public void ErrorsOnCallWithWrongNumberOfParameters()
+        {
+            RuntimeErrors("fn a() {} a(1);");
+            RuntimeErrors("fn a(x) {} a(1,2);");
+            RuntimeErrors("fn a(x) {} a(1,2,3);");
+            RuntimeErrors("fn a(x) {} a();");
+            RuntimeErrors("fn a(x,y) {} a();");
+            RuntimeErrors("fn a(x,y) {} a(true);");
+            RuntimeErrors("fn a(x,y) {} a(true,false,true);");
+        }
+
+        [Fact]
+        public void VMPrintsStackTraceOnRuntimeError()
+        {
+            var script = @"fn a() = b();
+                           fn b() = c();
+                           fn c() = c(1, 2, 3);
+                           a();";
+
+            StringWriter output = new StringWriter();
+            RuntimeErrors(script, output);
+            var result = output.ToString();
         }
     }
 }

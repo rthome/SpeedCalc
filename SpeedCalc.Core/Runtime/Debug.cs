@@ -29,6 +29,7 @@ namespace SpeedCalc.Core.Runtime
                 case OpCode.PopN:
                 case OpCode.LoadLocal:
                 case OpCode.AssignLocal:
+                case OpCode.Call:
                     var slot = chunk.Code[offset + 1];
                     sb.Append($"{instr} {slot,4:D4}");
                     return (offset + 2, sb.ToString());

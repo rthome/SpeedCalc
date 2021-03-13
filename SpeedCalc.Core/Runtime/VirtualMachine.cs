@@ -48,7 +48,7 @@ namespace SpeedCalc.Core.Runtime
             void BinaryOp(Func<decimal, decimal, Value> op)
             {
                 if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
-                    throw new RuntimeExecutionException("Operands must be numbers");
+                    throw new RuntimeExecutionException("Operands must be numbers", CreateStackTrace());
                 var b = Pop().AsNumber();
                 var a = Pop().AsNumber();
                 var result = op(a, b);
@@ -90,7 +90,7 @@ namespace SpeedCalc.Core.Runtime
                         {
                             var name = ReadConstant().AsString();
                             if (!globals.TryGetValue(name, out var value))
-                                throw new RuntimeExecutionException($"Undefined variable '{name}'");
+                                throw new RuntimeExecutionException($"Undefined variable '{name}'", CreateStackTrace());
                             Push(value);
                         }
                         break;
@@ -104,7 +104,7 @@ namespace SpeedCalc.Core.Runtime
                         {
                             var name = ReadConstant().AsString();
                             if (!globals.ContainsKey(name))
-                                throw new RuntimeExecutionException($"Undefined variable '{name}'");
+                                throw new RuntimeExecutionException($"Undefined variable '{name}'", CreateStackTrace());
                             globals[name] = Peek();
                         }
                         break;
@@ -162,7 +162,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Negate:
                         {
                             if (!Peek(0).IsNumber())
-                                throw new RuntimeExecutionException("Operand must be a number");
+                                throw new RuntimeExecutionException("Operand must be a number", CreateStackTrace());
                             Push(Values.Number(-Pop().AsNumber()));
                         }
                         break;
@@ -192,7 +192,7 @@ namespace SpeedCalc.Core.Runtime
                         return InterpretResult.Success;
 
                     default:
-                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {frame.IP,4:D4}");
+                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {frame.IP,4:D4}", CreateStackTrace());
                 }
             }
         }
@@ -207,11 +207,9 @@ namespace SpeedCalc.Core.Runtime
             if (function is null)
                 return InterpretResult.CompileError;
 
-            Push(Values.Function(function));
-            ref var frame = ref frames[frameCount++];
-            frame.Function = function;
-            frame.IP = 0;
-            frame.StackBase = 0;
+            var functionValue = Values.Function(function);
+            Push(functionValue);
+            CallValue(functionValue, 0);
 
             try
             {
@@ -226,8 +224,26 @@ namespace SpeedCalc.Core.Runtime
                 StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
                 if (!string.IsNullOrEmpty(exc.Message))
                     StdOut.WriteLine($"    {exc.Message}");
+                if (!string.IsNullOrEmpty(exc.StackTrace))
+                {
+                    StdOut.WriteLine("Stack Trace:");
+                    StdOut.WriteLine(exc.VMStackTrace);
+                }
                 return InterpretResult.RuntimeError;
             }
+        }
+
+        public string CreateStackTrace()
+        {
+            var sb = new StringBuilder();
+            for (int i = frameCount - 1; i >= 0; i--)
+            {
+                var frame = frames[i];
+                var line = frame.Function.Chunk.Lines[frame.IP];
+                sb.AppendLine($"[line {line}] in {frame.Function}");
+            }
+
+            return sb.ToString();
         }
 
         public void Push(Value value)
@@ -242,7 +258,7 @@ namespace SpeedCalc.Core.Runtime
         {
             stackTopOffset--;
             if (stackTopOffset < 0)
-                throw new RuntimeExecutionException("Attempt to pop off of empty stack");
+                throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
 
             return stack[stackTopOffset];
         }
@@ -251,14 +267,14 @@ namespace SpeedCalc.Core.Runtime
         {
             stackTopOffset -= count;
             if (stackTopOffset < 0)
-                throw new RuntimeExecutionException("Attempt to pop off of empty stack");
+                throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
         }
 
         public Value Peek(int distance = 0)
         {
             var index = stackTopOffset - 1 - distance;
             if (index < 0)
-                throw new RuntimeExecutionException("Attempt to peek beyond end of stack");
+                throw new RuntimeExecutionException("Attempt to peek beyond end of stack", CreateStackTrace());
 
             return stack[index];
         }
