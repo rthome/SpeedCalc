@@ -1,5 +1,8 @@
-﻿namespace SpeedCalc.Core.Runtime
+﻿using System.Diagnostics;
+
+namespace SpeedCalc.Core.Runtime
 {
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public readonly struct Token
     {
         public TokenType Type { get; }
@@ -14,5 +17,7 @@
             Lexeme = lexeme;
             Line = line;
         }
+
+        string GetDebuggerDisplay() => $"{{{Type} \"{Lexeme}\" ({Line})}}";
     }
 }

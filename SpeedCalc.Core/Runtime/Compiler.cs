@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace SpeedCalc.Core.Runtime
 {
@@ -8,12 +9,16 @@ namespace SpeedCalc.Core.Runtime
         Script,
     }
 
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public struct Local
     {
         public Token Token;
         public int Depth;
+
+        string GetDebuggerDisplay() => $"{{Local \"{Token.Lexeme}\" Depth={Depth}}}";
     }
 
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public sealed class Compiler
     {
         public Compiler Enclosing { get; }
@@ -27,6 +32,8 @@ namespace SpeedCalc.Core.Runtime
         public int LocalCount { get; private set; }
 
         public int ScopeDepth { get; private set; }
+
+        string GetDebuggerDisplay() => $"{{Compiler Fn={Function} Locals={LocalCount} Depth={ScopeDepth}}}";
 
         public void BeginScope()
         {
