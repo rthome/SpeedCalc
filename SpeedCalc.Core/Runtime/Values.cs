@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace SpeedCalc.Core.Runtime
@@ -73,22 +74,31 @@ namespace SpeedCalc.Core.Runtime
         static readonly Value TrueInstance = new BoolVal(true);
         static readonly Value FalseInstance = new BoolVal(false);
 
+        [DebuggerStepThrough]
         public static Value Bool(bool value) => value ? TrueInstance : FalseInstance;
 
+        [DebuggerStepThrough]
         public static Value Number(decimal value) => new NumberVal(value);
 
+        [DebuggerStepThrough]
         public static Value String(string value) => new StringVal(value);
 
+        [DebuggerStepThrough]
         public static Value Function(Function value) => new FunctionVal(value);
 
+        [DebuggerStepThrough]
         public static bool IsBool(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is BoolVal;
 
+        [DebuggerStepThrough]
         public static bool IsNumber(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is NumberVal;
 
+        [DebuggerStepThrough]
         public static bool IsString(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is StringVal;
 
+        [DebuggerStepThrough]
         public static bool IsFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal;
 
+        [DebuggerStepThrough]
         public static bool AsBool(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is BoolVal val)
@@ -97,6 +107,7 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a bool value.");
         }
 
+        [DebuggerStepThrough]
         public static decimal AsNumber(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is NumberVal val)
@@ -105,6 +116,7 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a number value.");
         }
 
+        [DebuggerStepThrough]
         public static string AsString(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is StringVal val)
@@ -113,6 +125,7 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a string value.");
         }
 
+        [DebuggerStepThrough]
         public static Function AsFunction(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal val)
