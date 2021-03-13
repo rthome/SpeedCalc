@@ -14,7 +14,7 @@ namespace SpeedCalc.Core.Runtime
 
     public sealed class VirtualMachine
     {
-        class CallFrame
+        sealed class CallFrame
         {
             public Function Function { get; set; }
 
@@ -30,25 +30,28 @@ namespace SpeedCalc.Core.Runtime
         readonly Value[] stack = new Value[MaxStackSize];
         readonly Dictionary<string, Value> globals = new Dictionary<string, Value>();
 
-        int frameCount = 0;
-        int stackPointer = 0;
+        public long InstructionCounter { get; private set; }
 
-        CallFrame frame;
+        int FrameCount { get; set; } = 0;
+
+        int StackPointer { get; set; } = 0;
+
+        CallFrame Frame { get; set; }
 
         public TextWriter StdOut { get; private set; }
 
-        Chunk CurrentChunk => frame.Function.Chunk;
+        Chunk CurrentChunk => Frame.Function.Chunk;
 
         RuntimeArray<byte> Code => CurrentChunk.Code;
 
         static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
 
-        byte ReadByte() => Code[frame.IP++];
+        byte ReadByte() => Code[Frame.IP++];
 
         ushort ReadShort()
         {
-            frame.IP += 2;
-            return (ushort)(Code[frame.IP - 2] << 8 | Code[frame.IP - 1]);
+            Frame.IP += 2;
+            return (ushort)(Code[Frame.IP - 2] << 8 | Code[Frame.IP - 1]);
         }
 
         Value ReadConstant() => CurrentChunk.Constants[ReadByte()];
@@ -65,12 +68,12 @@ namespace SpeedCalc.Core.Runtime
 
         InterpretResult Run()
         {
-            frame = frames[frameCount - 1];
+            Frame = frames[FrameCount - 1];
 
             while (true)
             {
 #if TRACE
-                System.Diagnostics.Debug.WriteLine(CurrentChunk.DisassembleInstruction(frame.IP));
+                System.Diagnostics.Debug.WriteLine(CurrentChunk.DisassembleInstruction(Frame.IP));
 #endif
 
                 var instruction = (OpCode)ReadByte();
@@ -107,7 +110,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.LoadLocal:
                         {
                             var slot = ReadByte();
-                            Push(stack[frame.StackBase + slot]);
+                            Push(stack[Frame.StackBase + slot]);
                         }
                         break;
                     case OpCode.AssignGlobal:
@@ -121,7 +124,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.AssignLocal:
                         {
                             var slot = ReadByte();
-                            stack[frame.StackBase + slot] = Peek();
+                            stack[Frame.StackBase + slot] = Peek();
                         }
                         break;
                     case OpCode.DefineGlobal:
@@ -182,48 +185,48 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.Jump:
                         {
                             var offset = ReadShort();
-                            frame.IP += offset;
+                            Frame.IP += offset;
                         }
                         break;
                     case OpCode.JumpIfFalse:
                         {
                             var offset = ReadShort();
                             if (IsFalsey(Peek()))
-                                frame.IP += offset;
+                                Frame.IP += offset;
                         }
                         break;
                     case OpCode.Loop:
                         {
                             var offset = ReadShort();
-                            frame.IP -= offset;
+                            Frame.IP -= offset;
                         }
                         break;
                     case OpCode.Call:
                         {
                             var argCount = ReadByte();
                             CallValue(Peek(argCount), argCount);
-                            frame = frames[frameCount - 1];
+                            Frame = frames[FrameCount - 1];
                         }
                         break;
                     case OpCode.Return:
                         {
                             var result = Pop();
-                            frameCount--;
-                            if (frameCount == 0)
+                            FrameCount--;
+                            if (FrameCount == 0)
                             {
                                 Pop();
                                 return InterpretResult.Success;
                             }
 
-                            stackPointer = frame.StackBase;
+                            StackPointer = Frame.StackBase;
                             Push(result);
 
-                            frame = frames[frameCount - 1];
+                            Frame = frames[FrameCount - 1];
                         }
                         break;
 
                     default:
-                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {frame.IP,4:D4}", CreateStackTrace());
+                        throw new RuntimeExecutionException($"Unknown instruction value '{instruction}' at ip offset {Frame.IP,4:D4}", CreateStackTrace());
                 }
             }
         }
@@ -232,14 +235,14 @@ namespace SpeedCalc.Core.Runtime
         {
             if (function.Arity != argCount)
                 throw new RuntimeExecutionException($"Function {function} expects {function.Arity} arguments but received {argCount}", CreateStackTrace());
-            if (frameCount == MaxCallFrameDepth)
+            if (FrameCount == MaxCallFrameDepth)
                 throw new RuntimeExecutionException("Stack overflow", CreateStackTrace());
 
-            frames[frameCount++] = new CallFrame
+            frames[FrameCount++] = new CallFrame
             {
                 Function = function,
                 IP = 0,
-                StackBase = stackPointer - argCount - 1,
+                StackBase = StackPointer - argCount - 1,
             };
         }
 
@@ -251,46 +254,10 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeExecutionException($"Can only call functions - received '{callee}' instead", CreateStackTrace());
         }
 
-        public InterpretResult Interpret(string source)
-        {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
-
-            var parser = new Parser();
-            var function = parser.Compile(source);
-            if (function is null)
-                return InterpretResult.CompileError;
-
-            var functionValue = Values.Function(function);
-            Push(functionValue);
-            CallValue(functionValue, 0);
-
-            try
-            {
-                return Run();
-            }
-            catch (RuntimeException exc)
-            {
-                var errorFrame = frames[frameCount - 1];
-                var errorInstr = errorFrame.IP;
-                var errorLine = errorFrame.Function.Chunk.Lines[errorInstr];
-                var disassembledInstr = errorFrame.Function.Chunk.DisassembleInstruction(errorInstr);
-                StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
-                if (!string.IsNullOrEmpty(exc.Message))
-                    StdOut.WriteLine($" -> {exc.Message}");
-                if (!string.IsNullOrEmpty(exc.StackTrace))
-                {
-                    StdOut.WriteLine("Stack Trace:");
-                    StdOut.WriteLine(exc.VMStackTrace);
-                }
-                return InterpretResult.RuntimeError;
-            }
-        }
-
         public string CreateStackTrace()
         {
             var sb = new StringBuilder();
-            for (int i = frameCount - 1; i >= 0; i--)
+            for (int i = FrameCount - 1; i >= 0; i--)
             {
                 var frame = frames[i];
                 var line = frame.Function.Chunk.Lines[frame.IP];
@@ -305,32 +272,79 @@ namespace SpeedCalc.Core.Runtime
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            stack[stackPointer++] = value;
+            stack[StackPointer++] = value;
         }
 
         public Value Pop()
         {
-            stackPointer--;
-            if (stackPointer < 0)
+            StackPointer--;
+            if (StackPointer < 0)
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
 
-            return stack[stackPointer];
+            return stack[StackPointer];
         }
 
         public void PopN(int count)
         {
-            stackPointer -= count;
-            if (stackPointer < 0)
+            StackPointer -= count;
+            if (StackPointer < 0)
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
         }
 
         public Value Peek(int distance = 0)
         {
-            var index = stackPointer - 1 - distance;
+            var index = StackPointer - 1 - distance;
             if (index < 0)
                 throw new RuntimeExecutionException("Attempt to peek beyond end of stack", CreateStackTrace());
 
             return stack[index];
+        }
+
+        public InterpretResult Interpret(Function function)
+        {
+            if (function is null)
+                throw new ArgumentNullException(nameof(function));
+
+            var functionValue = Values.Function(function);
+            Push(functionValue);
+            CallValue(functionValue, 0);
+
+            InstructionCounter = 0;
+
+            try
+            {
+                return Run();
+            }
+            catch (RuntimeException exc)
+            {
+                var errorFrame = frames[FrameCount - 1];
+                var errorInstr = errorFrame.IP;
+                var errorLine = errorFrame.Function.Chunk.Lines[errorInstr];
+                var disassembledInstr = errorFrame.Function.Chunk.DisassembleInstruction(errorInstr);
+                StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
+                if (!string.IsNullOrEmpty(exc.Message))
+                    StdOut.WriteLine($" -> {exc.Message}");
+                if (!string.IsNullOrEmpty(exc.StackTrace))
+                {
+                    StdOut.WriteLine("Stack Trace:");
+                    StdOut.WriteLine(exc.VMStackTrace);
+                }
+
+                return InterpretResult.RuntimeError;
+            }
+        }
+
+        public InterpretResult Interpret(string source)
+        {
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            var parser = new Parser();
+            var function = parser.Compile(source);
+            if (function is null)
+                return InterpretResult.CompileError;
+
+            return Interpret(function);
         }
 
         public void SetStdOut(TextWriter writer) => StdOut = writer ?? throw new ArgumentNullException(nameof(writer));

@@ -82,11 +82,12 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void MachineThrowsOnNullChunk()
+        public void MachineThrowsOnNullInterpret()
         {
             var vm = new VirtualMachine();
 
-            Assert.ThrowsAny<ArgumentException>(() => vm.Interpret(null));
+            Assert.ThrowsAny<ArgumentException>(() => vm.Interpret((Function)null));
+            Assert.ThrowsAny<ArgumentException>(() => vm.Interpret((string)null));
         }
 
         [Fact]
