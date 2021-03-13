@@ -99,7 +99,7 @@ namespace SpeedCalc.Core.Runtime
                         Pop();
                         break;
                     case OpCode.PopN:
-                        PopN(ReadByte());
+                        Pop(ReadByte());
                         break;
                     case OpCode.LoadGlobal:
                         {
@@ -277,20 +277,13 @@ namespace SpeedCalc.Core.Runtime
             stack[StackPointer++] = value;
         }
 
-        public Value Pop()
-        {
-            StackPointer--;
-            if (StackPointer < 0)
-                throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
-
-            return stack[StackPointer];
-        }
-
-        public void PopN(int count)
+        public Value Pop(int count = 1)
         {
             StackPointer -= count;
             if (StackPointer < 0)
                 throw new RuntimeExecutionException("Attempt to pop off of empty stack", CreateStackTrace());
+
+            return stack[StackPointer];
         }
 
         public Value Peek(int distance = 0)

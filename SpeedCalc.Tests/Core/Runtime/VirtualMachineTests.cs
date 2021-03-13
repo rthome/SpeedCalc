@@ -77,7 +77,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             vm.Push(second);
             vm.Push(third);
 
-            vm.PopN(2);
+            vm.Pop(2);
             Assert.Equal(first, vm.Pop());
         }
 
