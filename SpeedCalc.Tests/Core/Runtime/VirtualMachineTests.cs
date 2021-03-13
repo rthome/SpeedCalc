@@ -117,5 +117,34 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Same(std, vm.StdOut);
             Assert.Same(err, vm.ErrOut);
         }
+
+        [Fact]
+        public void CanExecuteScript()
+        {
+            var vm = new VirtualMachine();
+            Assert.Equal(InterpretResult.Success, vm.Interpret("print 1;"));
+        }
+
+        [Fact]
+        public void CanExecuteFunction()
+        {
+            var parser = new Parser();
+            var function = parser.Compile("print 1;");
+
+            var vm = new VirtualMachine();
+            Assert.Equal(InterpretResult.Success, vm.Interpret(function));
+        }
+
+        [Fact]
+        public void CanExecuteScopedFunction()
+        {
+            var parser = new Parser();
+            var function = parser.Compile("fn test() { print 1; }");
+
+            var testFunction = function.Chunk.Constants[1].AsFunction();
+
+            var vm = new VirtualMachine();
+            Assert.Equal(InterpretResult.Success, vm.Interpret(testFunction));
+        }
     }
 }
