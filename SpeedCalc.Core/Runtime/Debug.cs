@@ -1,16 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 
 namespace SpeedCalc.Core.Runtime
 {
     public static class Debug
     {
-        static (int newOffset, string instruction) Disassemble(Chunk chunk, int offset)
+        static (int newOffset, string instruction) Disassemble(Chunk chunk, int offset, bool alwaysWriteLine = false)
         {
             var sb = new StringBuilder();
             sb.Append($"{offset,4:D4} ");
-            if (offset > 0 && chunk.Lines[offset] == chunk.Lines[offset - 1])
+            if (!alwaysWriteLine && offset > 0 && chunk.Lines[offset] == chunk.Lines[offset - 1])
                 sb.Append("   | ");
             else
                 sb.Append($"{chunk.Lines[offset],4:D4} ");
@@ -73,25 +71,30 @@ namespace SpeedCalc.Core.Runtime
 
         public static string DisassembleInstruction(this Chunk chunk, int offset)
         {
-            return Disassemble(chunk, offset).instruction;
+            return Disassemble(chunk, offset, alwaysWriteLine: true).instruction;
         }
 
-        public static IEnumerable<string> DisassembleChunk(this Chunk chunk)
+        public static string DisassembleChunk(this Chunk chunk)
         {
-            var disassembledInstructions = new List<string>();
+            var sb = new StringBuilder();
             for (int i = 0; i < chunk.Code.Count;)
             {
                 var (newOffset, instruction) = Disassemble(chunk, i);
                 i = newOffset;
-                disassembledInstructions.Add(instruction);
+                sb.AppendLine(instruction);
             }
-            return disassembledInstructions;
+            return sb.ToString();
         }
 
-        public static IEnumerable<string> DisassembleFunction(this Function function)
+        public static string DisassembleFunction(this Function function)
         {
-            var disassembledInstructions = function.Chunk.DisassembleChunk();
-            return Enumerable.Concat(new[] { $"---- {function} ----" }, disassembledInstructions);
+            var disassembledChunk = function.Chunk.DisassembleChunk();
+            var prefix = $"---- {function} ----";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(prefix);
+            sb.Append(disassembledChunk);
+            return sb.ToString();
         }
     }
 }

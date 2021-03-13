@@ -812,10 +812,7 @@ namespace SpeedCalc.Core.Runtime
 
 #if DEBUG
             if (!HadError)
-            {
-                foreach (var line in Compiler.Function.DisassembleFunction())
-                    System.Diagnostics.Debug.WriteLine(line);
-            }
+                System.Diagnostics.Debug.WriteLine(Compiler.Function.DisassembleFunction());
 #endif
 
             var function = Compiler.Function;

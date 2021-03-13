@@ -277,7 +277,7 @@ namespace SpeedCalc.Core.Runtime
                 var disassembledInstr = errorFrame.Function.Chunk.DisassembleInstruction(errorInstr);
                 StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
                 if (!string.IsNullOrEmpty(exc.Message))
-                    StdOut.WriteLine($"    {exc.Message}");
+                    StdOut.WriteLine($" -> {exc.Message}");
                 if (!string.IsNullOrEmpty(exc.StackTrace))
                 {
                     StdOut.WriteLine("Stack Trace:");

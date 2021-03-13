@@ -3,8 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 using Xunit;
 
@@ -113,8 +111,7 @@ namespace SpeedCalc.Tests.Core.Runtime
                 Assert.NotNull(function);
 
 #if DEBUG
-                System.Diagnostics.Debug.WriteLine(Debugger.IsAttached, function.DisassembleFunction()
-                    .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line), sb => sb.ToString()));
+                System.Diagnostics.Debug.WriteLine(Debugger.IsAttached, function.DisassembleFunction());
 #endif
 
                 return new Seq(function.Chunk, initialOffset, checkToEnd);
