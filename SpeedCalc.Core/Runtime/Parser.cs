@@ -821,7 +821,7 @@ namespace SpeedCalc.Core.Runtime
             {
                 new Rule(null,     null,   Precedence.None),       // Error
                 new Rule(null,     null,   Precedence.None),       // EOF
-                new Rule(Grouping, Call,   Precedence.None),       // ParenLeft
+                new Rule(Grouping, Call,   Precedence.Call),       // ParenLeft
                 new Rule(null,     null,   Precedence.None),       // ParenRight
                 new Rule(null,     null,   Precedence.None),       // BraceLeft
                 new Rule(null,     null,   Precedence.None),       // BraceRight
