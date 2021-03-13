@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 
 using Xunit;
 
@@ -9,36 +10,61 @@ namespace SpeedCalc.Tests.Core.Runtime
 {
     public class ScriptExecutionTests
     {
+        sealed class DebugTextWriter : StreamWriter
+        {
+            sealed class DebugStream : Stream
+            {
+                static readonly NotSupportedException NotSupported = new();
+
+                public override bool CanRead => false;
+                public override bool CanSeek => false;
+                public override bool CanWrite => true;
+
+                public override void Flush() => System.Diagnostics.Debug.Flush();
+
+                public override long Length => throw NotSupported;
+                public override int Read(byte[] buffer, int offset, int count) => throw NotSupported;
+                public override long Seek(long offset, SeekOrigin origin) => throw NotSupported;
+                public override void SetLength(long value) => throw NotSupported;
+                public override long Position { get => throw NotSupported; set => throw NotSupported; }
+                
+                public override void Write(byte[] buffer, int offset, int count) => System.Diagnostics.Debug.Write(Encoding.Unicode.GetString(buffer, offset, count));
+                
+            }
+
+            public DebugTextWriter()
+                : base(new DebugStream(), Encoding.Unicode, 1024)
+            {
+                AutoFlush = true;
+            }
+        }
+
         static void CompilerErrors(string source, TextWriter output = null)
         {
-            var vm = new VirtualMachine();
-            if (output is not null)
-                vm.SetStdOut(output);
+            output ??= new DebugTextWriter();
+            var vm = new VirtualMachine(output, output);
             Assert.Equal(InterpretResult.CompileError, vm.Interpret(source));
         }
 
         static void RuntimeErrors(string source, TextWriter output = null)
         {
-            var vm = new VirtualMachine();
-            if (output is not null)
-                vm.SetStdOut(output);
+            output ??= new DebugTextWriter();
+            var vm = new VirtualMachine(output, output);
             Assert.Equal(InterpretResult.RuntimeError, vm.Interpret(source));
         }
 
         static void RunScript(string source, TextWriter output = null)
         {
-            var vm = new VirtualMachine();
-            if (output is not null)
-                vm.SetStdOut(output);
+            output ??= new DebugTextWriter();
+            var vm = new VirtualMachine(output, output);
             Assert.Equal(InterpretResult.Success, vm.Interpret(source));
         }
 
         static string RunScriptAndCaptureOutput(string source)
         {
-            var vm = new VirtualMachine();
             var writer = new StringWriter();
+            var vm = new VirtualMachine(writer, Console.Error);
 
-            vm.SetStdOut(writer);
             Assert.Equal(InterpretResult.Success, vm.Interpret(source));
 
             return writer.ToString().TrimEnd('\r', '\n');

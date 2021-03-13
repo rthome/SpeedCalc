@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.IO;
 
 namespace SpeedCalc.Core.Runtime
 {
@@ -65,6 +66,8 @@ namespace SpeedCalc.Core.Runtime
             public static LoopState FromCurrentState(Parser parser) => new LoopState(parser.CurrentCodePosition(), parser.Compiler.ScopeDepth, new RuntimeArray<int>());
         }
 
+        readonly TextWriter Output;
+
         readonly Rule[] ParseRules;
 
         Scanner Scanner { get; set; }
@@ -89,13 +92,13 @@ namespace SpeedCalc.Core.Runtime
                 return;
             PanicMode = true;
 
-            Console.Error.Write($"[line {token.Line}] Error");
+            Output.Write($"[line {token.Line}] Error");
             if (token.Type == TokenType.EOF)
-                Console.Error.Write(" at end");
+                Output.Write(" at end");
             else if (token.Type != TokenType.Error)
-                Console.Error.Write($" at {token.Lexeme}");
+                Output.Write($" at {token.Lexeme}");
 
-            Console.Error.WriteLine($": {message}");
+            Output.WriteLine($": {message}");
             HadError = true;
         }
 
@@ -834,7 +837,7 @@ namespace SpeedCalc.Core.Runtime
             return HadError ? null : function;
         }
 
-        public Parser()
+        public Parser(TextWriter output = null)
         {
             ParseRules = new[]
             {
@@ -884,6 +887,8 @@ namespace SpeedCalc.Core.Runtime
                 new Rule(null,     null,   Precedence.None),       // Var
                 new Rule(null,     null,   Precedence.None),       // While
             };
+
+            Output = output ?? Console.Out;
         }
     }
 }

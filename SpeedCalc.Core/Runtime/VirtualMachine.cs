@@ -30,6 +30,10 @@ namespace SpeedCalc.Core.Runtime
         readonly Value[] stack = new Value[MaxStackSize];
         readonly Dictionary<string, Value> globals = new Dictionary<string, Value>();
 
+        public TextWriter StdOut { get; private set; }
+
+        public TextWriter ErrOut { get; private set; }
+
         public long InstructionCounter { get; private set; }
 
         int FrameCount { get; set; } = 0;
@@ -37,8 +41,6 @@ namespace SpeedCalc.Core.Runtime
         int StackPointer { get; set; } = 0;
 
         CallFrame Frame { get; set; }
-
-        public TextWriter StdOut { get; private set; }
 
         Chunk CurrentChunk => Frame.Function.Chunk;
 
@@ -321,13 +323,13 @@ namespace SpeedCalc.Core.Runtime
                 var errorInstr = errorFrame.IP;
                 var errorLine = errorFrame.Function.Chunk.Lines[errorInstr];
                 var disassembledInstr = errorFrame.Function.Chunk.DisassembleInstruction(errorInstr);
-                StdOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
+                ErrOut.WriteLine($"[line {errorLine}] Error in {errorFrame.Function} at {disassembledInstr}");
                 if (!string.IsNullOrEmpty(exc.Message))
-                    StdOut.WriteLine($" -> {exc.Message}");
+                    ErrOut.WriteLine($" -> {exc.Message}");
                 if (!string.IsNullOrEmpty(exc.StackTrace))
                 {
-                    StdOut.WriteLine("Stack Trace:");
-                    StdOut.WriteLine(exc.VMStackTrace);
+                    ErrOut.WriteLine("Stack Trace:");
+                    ErrOut.WriteLine(exc.VMStackTrace);
                 }
 
                 return InterpretResult.RuntimeError;
@@ -339,7 +341,7 @@ namespace SpeedCalc.Core.Runtime
             if (source is null)
                 throw new ArgumentNullException(nameof(source));
 
-            var parser = new Parser();
+            var parser = new Parser(ErrOut);
             var function = parser.Compile(source);
             if (function is null)
                 return InterpretResult.CompileError;
@@ -347,11 +349,12 @@ namespace SpeedCalc.Core.Runtime
             return Interpret(function);
         }
 
-        public void SetStdOut(TextWriter writer) => StdOut = writer ?? throw new ArgumentNullException(nameof(writer));
+        public VirtualMachine() : this(Console.Out, Console.Error) { }
 
-        public VirtualMachine()
+        public VirtualMachine(TextWriter standardOutput, TextWriter errorOutput)
         {
-            SetStdOut(Console.Out);
+            StdOut = standardOutput ?? throw new ArgumentNullException(nameof(standardOutput));
+            ErrOut = errorOutput ?? throw new ArgumentNullException(nameof(errorOutput));
         }
     }
 }

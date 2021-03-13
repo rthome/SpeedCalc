@@ -93,9 +93,9 @@ namespace SpeedCalc.Tests.Core.Runtime
         [Fact]
         public void MachineThrowsOnNullStdOut()
         {
-            var vm = new VirtualMachine();
-
-            Assert.ThrowsAny<ArgumentException>(() => vm.SetStdOut(null));
+            Assert.ThrowsAny<ArgumentException>(() => new VirtualMachine(null, null));
+            Assert.ThrowsAny<ArgumentException>(() => new VirtualMachine(new StringWriter(), null));
+            Assert.ThrowsAny<ArgumentException>(() => new VirtualMachine(null, new StringWriter()));
         }
 
         [Fact]
@@ -104,16 +104,18 @@ namespace SpeedCalc.Tests.Core.Runtime
             var vm = new VirtualMachine();
 
             Assert.Same(Console.Out, vm.StdOut);
+            Assert.Same(Console.Error, vm.ErrOut);
         }
 
         [Fact]
-        public void MachineSetsGivenStdOut()
+        public void MachineSetsGivenOutputs()
         {
-            var vm = new VirtualMachine();
-            var writer = new StringWriter();
+            var std = new StringWriter();
+            var err = new StringWriter();
+            var vm = new VirtualMachine(std, err);
 
-            vm.SetStdOut(writer);
-            Assert.Same(writer, vm.StdOut);
+            Assert.Same(std, vm.StdOut);
+            Assert.Same(err, vm.ErrOut);
         }
     }
 }
