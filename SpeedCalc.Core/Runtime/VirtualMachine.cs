@@ -78,6 +78,7 @@ namespace SpeedCalc.Core.Runtime
                 System.Diagnostics.Debug.WriteLine(CurrentChunk.DisassembleInstruction(Frame.IP));
 #endif
 
+                InstructionCounter++;
                 var instruction = (OpCode)ReadByte();
                 switch (instruction)
                 {
