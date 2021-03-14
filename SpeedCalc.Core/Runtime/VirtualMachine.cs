@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SpeedCalc.Core.Runtime
@@ -46,18 +47,23 @@ namespace SpeedCalc.Core.Runtime
 
         RuntimeArray<byte> Code => CurrentChunk.Code;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         byte ReadByte() => Code[Frame.IP++];
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         ushort ReadShort()
         {
             Frame.IP += 2;
             return (ushort)(Code[Frame.IP - 2] << 8 | Code[Frame.IP - 1]);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         Value ReadConstant() => CurrentChunk.Constants[ReadByte()];
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void BinaryOp(Func<decimal, decimal, Value> op)
         {
             if (!Peek(0).IsNumber() || !Peek(1).IsNumber())
@@ -303,14 +309,13 @@ namespace SpeedCalc.Core.Runtime
             return sb.ToString();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(Value value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
-
             stack[StackPointer++] = value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Value Pop(int count = 1)
         {
             StackPointer -= count;
@@ -320,6 +325,7 @@ namespace SpeedCalc.Core.Runtime
             return stack[StackPointer];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Value Peek(int distance = 0)
         {
             var index = StackPointer - 1 - distance;
