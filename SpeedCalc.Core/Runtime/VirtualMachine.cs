@@ -252,8 +252,30 @@ namespace SpeedCalc.Core.Runtime
         {
             if (callee.IsFunction())
                 Call(callee.AsFunction(), argCount);
+            else if (callee.IsNativeFunction())
+            {
+                var nativeDelegate = callee.AsNativeFunction();
+                var args = stack[(StackPointer - argCount)..StackPointer];
+
+                var result = nativeDelegate(args);
+                if (result is null)
+                    throw new RuntimeExecutionException("Native function call returned null value", CreateStackTrace());
+
+                StackPointer -= argCount + 1;
+                Push(result);
+            }
             else
                 throw new RuntimeExecutionException($"Can only call functions - received '{callee}' instead", CreateStackTrace());
+        }
+
+        public void DefineNativeFunction(string functionName, Values.NativeFuncDelegate nativeDelegate)
+        {
+            if (string.IsNullOrWhiteSpace(functionName))
+                throw new ArgumentException($"'{nameof(functionName)}' cannot be null or whitespace.", nameof(functionName));
+            if (nativeDelegate is null)
+                throw new ArgumentNullException(nameof(nativeDelegate));
+
+            globals[functionName] = Values.NativeFunction(nativeDelegate);
         }
 
         public string CreateStackTrace()
