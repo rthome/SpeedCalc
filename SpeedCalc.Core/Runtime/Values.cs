@@ -31,6 +31,8 @@ namespace SpeedCalc.Core.Runtime
 
     public static class Values
     {
+        public delegate Value NativeFuncDelegate(Value[] parameters);
+
         #region Value Subtypes
 
         sealed class BoolVal : Value
@@ -60,13 +62,22 @@ namespace SpeedCalc.Core.Runtime
             public StringVal(string value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public sealed class FunctionVal : Value
+        sealed class FunctionVal : Value
         {
             public Function Value { get; }
 
             public override int GetHashCode() => new { Value.Name, Value.Arity }.GetHashCode();
 
             public FunctionVal(Function value) => Value = value ?? throw new ArgumentNullException(nameof(value));
+        }
+
+        sealed class NativeFunctionVal : Value
+        {
+            public NativeFuncDelegate Value { get; }
+
+            public override int GetHashCode() => Value.GetHashCode();
+
+            public NativeFunctionVal(NativeFuncDelegate value) => Value = value ?? throw new ArgumentNullException();
         }
 
         #endregion
@@ -87,6 +98,9 @@ namespace SpeedCalc.Core.Runtime
         public static Value Function(Function value) => new FunctionVal(value);
 
         [DebuggerStepThrough]
+        public static Value NativeFunction(NativeFuncDelegate value) => new NativeFunctionVal(value);
+
+        [DebuggerStepThrough]
         public static bool IsBool(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is BoolVal;
 
         [DebuggerStepThrough]
@@ -97,6 +111,9 @@ namespace SpeedCalc.Core.Runtime
 
         [DebuggerStepThrough]
         public static bool IsFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal;
+
+        [DebuggerStepThrough]
+        public static bool IsNativeFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is NativeFunctionVal;
 
         [DebuggerStepThrough]
         public static bool AsBool(this Value value)
@@ -134,6 +151,15 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a function value.");
         }
 
+        [DebuggerStepThrough]
+        public static NativeFuncDelegate AsNativeFunction(this Value value)
+        {
+            if ((value ?? throw new ArgumentNullException(nameof(value))) is NativeFunctionVal val)
+                return val.Value;
+            else
+                throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a native function value.");
+        }
+
         public static bool EqualsValue(this Value firstValue, Value secondValue)
         {
             if (firstValue.GetType() != secondValue.GetType())
@@ -145,6 +171,8 @@ namespace SpeedCalc.Core.Runtime
                 NumberVal _ => firstValue.AsNumber() == secondValue.AsNumber(),
                 StringVal _ => firstValue.AsString() == secondValue.AsString(),
                 FunctionVal _ => ReferenceEquals(firstValue.AsFunction(), secondValue.AsFunction()),
+                NativeFunctionVal _ => firstValue.AsNativeFunction().Equals(secondValue.AsNativeFunction()),
+
                 _ => throw new RuntimeException($"Unknown value types received: '{firstValue.GetType()}' and {secondValue.GetType()}'"),
             };
         }
@@ -160,6 +188,8 @@ namespace SpeedCalc.Core.Runtime
                 NumberVal _ => value.AsNumber().ToString("G", CultureInfo.InvariantCulture),
                 StringVal val => val.Value,
                 FunctionVal val => val.AsFunction().ToString(),
+                NativeFunctionVal val => $"<native {val.AsNativeFunction().Method.Name}>",
+
                 _ => throw new RuntimeException($"Unknown value type received: '{value.GetType()}'"),
             };
         }

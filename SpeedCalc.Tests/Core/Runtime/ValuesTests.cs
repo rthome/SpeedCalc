@@ -19,6 +19,8 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.True(Values.String("").IsString());
 
             Assert.True(Values.Function(new Function("testfunc", 0)).IsFunction());
+
+            Assert.True(Values.NativeFunction(args => Values.Bool(true)).IsNativeFunction());
         }
 
         [Fact]
@@ -28,21 +30,31 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.False(boolVal.IsNumber());
             Assert.False(boolVal.IsString());
             Assert.False(boolVal.IsFunction());
+            Assert.False(boolVal.IsNativeFunction());
 
             var numberVal = Values.Number(0m);
             Assert.False(numberVal.IsBool());
             Assert.False(numberVal.IsString());
             Assert.False(numberVal.IsFunction());
+            Assert.False(numberVal.IsNativeFunction());
 
             var stringVal = Values.String("");
             Assert.False(stringVal.IsBool());
             Assert.False(stringVal.IsNumber());
             Assert.False(stringVal.IsFunction());
+            Assert.False(stringVal.IsNativeFunction());
 
             var funcVal = Values.Function(new Function("myFunction", 2));
             Assert.False(funcVal.IsBool());
             Assert.False(funcVal.IsString());
             Assert.False(funcVal.IsNumber());
+            Assert.False(funcVal.IsNativeFunction());
+
+            var nativeFuncVal = Values.NativeFunction(args => Values.Bool(true));
+            Assert.False(nativeFuncVal.IsBool());
+            Assert.False(nativeFuncVal.IsString());
+            Assert.False(nativeFuncVal.IsNumber());
+            Assert.False(nativeFuncVal.IsFunction());
         }
 
         [Fact]
@@ -52,11 +64,13 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.ThrowsAny<ArgumentException>(() => Values.IsNumber(null));
             Assert.ThrowsAny<ArgumentException>(() => Values.IsString(null));
             Assert.ThrowsAny<ArgumentException>(() => Values.IsFunction(null));
+            Assert.ThrowsAny<ArgumentException>(() => Values.IsNativeFunction(null));
 
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsBool());
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsNumber());
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsString());
             Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsFunction());
+            Assert.ThrowsAny<ArgumentException>(() => ((Value)null).AsNativeFunction());
         }
 
         [Fact]
@@ -96,6 +110,9 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             var func = new Function("test", 0);
             Assert.Equal(func, Values.Function(func).AsFunction());
+
+            static Value nativeFunc(Value[] args) => Values.Bool(true);
+            Assert.Equal(nativeFunc, Values.NativeFunction(nativeFunc).AsNativeFunction());
         }
 
         [Fact]
@@ -113,6 +130,10 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsBool());
             Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsString());
             Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsNumber());
+
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsString());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsNumber());
         }
 
         [Fact]
@@ -151,11 +172,29 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
+        public void NativeFunctionValueEquality()
+        {
+            static Value nativeFunc1(Value[] args) => Values.Bool(true);
+            static Value nativeFunc2(Value[] args) => Values.Bool(false);
+
+
+            var val1 = Values.NativeFunction(nativeFunc1);
+            var val2 = Values.NativeFunction(nativeFunc2);
+            var val1Ref = val1;
+
+            Assert.Equal(val1, val1);
+            Assert.Equal(val1, val1Ref);
+            Assert.Equal(val1, Values.NativeFunction(nativeFunc1));
+            Assert.NotEqual(val1, val2);
+        }
+
+        [Fact]
         public void ValuesOfDifferentTypesAreNotEqual()
         {
             Assert.NotEqual(Values.Bool(true), Values.String(""));
             Assert.NotEqual(Values.Bool(true), Values.Number(0m));
             Assert.NotEqual(Values.Bool(true), Values.Function(new Function("test", 0)));
+            Assert.NotEqual(Values.Bool(true), Values.NativeFunction(args => Values.Bool(true)));
         }
     }
 }
