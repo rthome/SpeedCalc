@@ -807,5 +807,15 @@ namespace SpeedCalc.Tests.Core.Runtime
         {
             CompilerErrors("return true;");
         }
+
+        [Fact]
+        public void CanCallBuiltinNatives()
+        {
+            var randomOutput = RunScriptAndCaptureOutput("print random();");
+            var clockOutput = RunScriptAndCaptureOutput("print clock();");
+
+            Assert.True(decimal.TryParse(randomOutput, out _));
+            Assert.True(decimal.TryParse(clockOutput, out _));
+        }
     }
 }

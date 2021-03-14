@@ -268,6 +268,17 @@ namespace SpeedCalc.Core.Runtime
                 throw new RuntimeExecutionException($"Can only call functions - received '{callee}' instead", CreateStackTrace());
         }
 
+        void DefineBuiltinNatives()
+        {
+            var rng = new Random();
+
+            Value RandomFunction(Value[] _) => Values.Number((decimal)rng.NextDouble());
+            Value ClockFunction(Value[] _) => Values.Number((decimal)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
+
+            DefineNativeFunction("random", RandomFunction);
+            DefineNativeFunction("clock", ClockFunction);
+        }
+
         public void DefineNativeFunction(string functionName, Values.NativeFuncDelegate nativeDelegate)
         {
             if (string.IsNullOrWhiteSpace(functionName))
@@ -370,6 +381,8 @@ namespace SpeedCalc.Core.Runtime
         {
             StdOut = standardOutput ?? throw new ArgumentNullException(nameof(standardOutput));
             ErrOut = errorOutput ?? throw new ArgumentNullException(nameof(errorOutput));
+
+            DefineBuiltinNatives();
         }
     }
 }
