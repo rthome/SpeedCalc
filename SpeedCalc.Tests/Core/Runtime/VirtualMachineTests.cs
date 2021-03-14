@@ -26,14 +26,6 @@ namespace SpeedCalc.Tests.Core.Runtime
         }
 
         [Fact]
-        public void PushThrowsOnNullValue()
-        {
-            var vm = new VirtualMachine();
-
-            Assert.ThrowsAny<ArgumentException>(() => vm.Push(null));
-        }
-
-        [Fact]
         public void PeekBeyondStackBorderThrows()
         {
             var vm = new VirtualMachine();
