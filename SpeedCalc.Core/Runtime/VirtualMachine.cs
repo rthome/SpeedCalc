@@ -37,11 +37,11 @@ namespace SpeedCalc.Core.Runtime
 
         public long InstructionCounter { get; private set; }
 
-        int FrameCount { get; set; } = 0;
+        int FrameCount = 0;
 
-        int StackPointer { get; set; } = 0;
+        int StackPointer = 0;
 
-        CallFrame Frame { get; set; }
+        CallFrame Frame;
 
         Chunk CurrentChunk => Frame.Function.Chunk;
 
