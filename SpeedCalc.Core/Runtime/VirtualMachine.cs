@@ -48,9 +48,6 @@ namespace SpeedCalc.Core.Runtime
         RuntimeArray<byte> Code => CurrentChunk.Code;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool IsFalsey(Value value) => (value.IsBool() && !value.AsBool()) || (value.IsNumber() && value.AsNumber() == 0M);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         byte ReadByte() => Code[Frame.IP++];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,7 +174,7 @@ namespace SpeedCalc.Core.Runtime
                         break;
                     case OpCode.Not:
                         {
-                            var falsey = IsFalsey(Pop());
+                            var falsey = Pop().IsFalsey();
                             Push(Values.Bool(falsey));
                         }
                         break;
@@ -200,7 +197,7 @@ namespace SpeedCalc.Core.Runtime
                     case OpCode.JumpIfFalse:
                         {
                             var offset = ReadShort();
-                            if (IsFalsey(Peek()))
+                            if (Peek().IsFalsey())
                                 Frame.IP += offset;
                         }
                         break;

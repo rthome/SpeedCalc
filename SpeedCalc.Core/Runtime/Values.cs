@@ -1,24 +1,25 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace SpeedCalc.Core.Runtime
 {
     public abstract class Value : IEquatable<Value>
     {
+        [DebuggerStepThrough]
         public override sealed string ToString() => Values.ToString(this);
 
+        [DebuggerStepThrough]
         public override sealed bool Equals(object obj)
         {
-            if (obj is null)
-                return false;
-
             if (obj is Value other)
                 return Equals(other);
             else
                 return false;
         }
 
+        [DebuggerStepThrough]
         public bool Equals(Value other)
         {
             if (other is null)
@@ -39,8 +40,10 @@ namespace SpeedCalc.Core.Runtime
         {
             public bool Value { get; }
 
+            [DebuggerStepThrough]
             public override int GetHashCode() => Value.GetHashCode();
 
+            [DebuggerStepThrough]
             public BoolVal(bool value) => Value = value;
         }
 
@@ -48,8 +51,10 @@ namespace SpeedCalc.Core.Runtime
         {
             public decimal Value { get; }
 
+            [DebuggerStepThrough]
             public override int GetHashCode() => Value.GetHashCode();
 
+            [DebuggerStepThrough]
             public NumberVal(decimal value) => Value = value;
         }
 
@@ -57,8 +62,10 @@ namespace SpeedCalc.Core.Runtime
         {
             public string Value { get; }
 
+            [DebuggerStepThrough]
             public override int GetHashCode() => Value.GetHashCode();
 
+            [DebuggerStepThrough]
             public StringVal(string value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
@@ -66,8 +73,10 @@ namespace SpeedCalc.Core.Runtime
         {
             public Function Value { get; }
 
+            [DebuggerStepThrough]
             public override int GetHashCode() => new { Value.Name, Value.Arity }.GetHashCode();
 
+            [DebuggerStepThrough]
             public FunctionVal(Function value) => Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
@@ -75,8 +84,10 @@ namespace SpeedCalc.Core.Runtime
         {
             public NativeFuncDelegate Value { get; }
 
+            [DebuggerStepThrough]
             public override int GetHashCode() => Value.GetHashCode();
 
+            [DebuggerStepThrough]
             public NativeFunctionVal(NativeFuncDelegate value) => Value = value ?? throw new ArgumentNullException();
         }
 
@@ -86,36 +97,47 @@ namespace SpeedCalc.Core.Runtime
         static readonly Value FalseInstance = new BoolVal(false);
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Value Bool(bool value) => value ? TrueInstance : FalseInstance;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Value Number(decimal value) => new NumberVal(value);
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Value String(string value) => new StringVal(value);
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Value Function(Function value) => new FunctionVal(value);
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Value NativeFunction(NativeFuncDelegate value) => new NativeFunctionVal(value);
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBool(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is BoolVal;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNumber(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is NumberVal;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsString(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is StringVal;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNativeFunction(this Value value) => (value ?? throw new ArgumentNullException(nameof(value))) is NativeFunctionVal;
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AsBool(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is BoolVal val)
@@ -125,6 +147,7 @@ namespace SpeedCalc.Core.Runtime
         }
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal AsNumber(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is NumberVal val)
@@ -134,6 +157,7 @@ namespace SpeedCalc.Core.Runtime
         }
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AsString(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is StringVal val)
@@ -143,6 +167,7 @@ namespace SpeedCalc.Core.Runtime
         }
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Function AsFunction(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is FunctionVal val)
@@ -152,12 +177,27 @@ namespace SpeedCalc.Core.Runtime
         }
 
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeFuncDelegate AsNativeFunction(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is NativeFunctionVal val)
                 return val.Value;
             else
                 throw new RuntimeValueTypeException($"Given runtime value '{value}' is not a native function value.");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsTruthy(this Value value) => !value.IsFalsey();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsFalsey(this Value value)
+        {
+            return value switch
+            {
+                BoolVal val => !val.Value,
+                NumberVal val => val.Value == 0m,
+                _ => false,
+            };
         }
 
         public static bool EqualsValue(this Value firstValue, Value secondValue)
