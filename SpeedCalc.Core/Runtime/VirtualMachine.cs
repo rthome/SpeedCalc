@@ -258,10 +258,13 @@ namespace SpeedCalc.Core.Runtime
                 Call(callee.AsFunction(), argCount);
             else if (callee.IsNativeFunction())
             {
-                var nativeDelegate = callee.AsNativeFunction();
+                var nativeFunction = callee.AsNativeFunction();
+                if (argCount != nativeFunction.Arity)
+                    throw new RuntimeExecutionException($"Native function {callee} expects {nativeFunction.Arity} arguments but received {argCount}", CreateStackTrace());
+
                 var args = stack[(StackPointer - argCount)..StackPointer];
 
-                var result = nativeDelegate(args);
+                var result = nativeFunction.Delegate(args);
                 if (result is null)
                     throw new RuntimeExecutionException("Native function call returned null value", CreateStackTrace());
 
@@ -279,18 +282,20 @@ namespace SpeedCalc.Core.Runtime
             Value RandomFunction(Value[] _) => Values.Number((decimal)rng.NextDouble());
             Value ClockFunction(Value[] _) => Values.Number((decimal)(DateTime.UtcNow - DateTime.UnixEpoch).TotalSeconds);
 
-            DefineNativeFunction("random", RandomFunction);
-            DefineNativeFunction("clock", ClockFunction);
+            DefineNativeFunction("random", 0, RandomFunction);
+            DefineNativeFunction("clock", 0, ClockFunction);
         }
 
-        public void DefineNativeFunction(string functionName, Values.NativeFuncDelegate nativeDelegate)
+        public void DefineNativeFunction(string functionName, int arity, Values.NativeFuncDelegate nativeDelegate)
         {
             if (string.IsNullOrWhiteSpace(functionName))
                 throw new ArgumentException($"'{nameof(functionName)}' cannot be null or whitespace.", nameof(functionName));
             if (nativeDelegate is null)
                 throw new ArgumentNullException(nameof(nativeDelegate));
+            if (arity < 0)
+                throw new ArgumentException("Arity can't be less than 0", nameof(arity));
 
-            globals[functionName] = Values.NativeFunction(nativeDelegate);
+            globals[functionName] = Values.NativeFunction(nativeDelegate, arity);
         }
 
         public string CreateStackTrace()

@@ -20,7 +20,7 @@ namespace SpeedCalc.Tests.Core.Runtime
 
             Assert.True(Values.Function(new Function("testfunc", 0)).IsFunction());
 
-            Assert.True(Values.NativeFunction(args => Values.Bool(true)).IsNativeFunction());
+            Assert.True(Values.NativeFunction(args => Values.Bool(true), 0).IsNativeFunction());
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.False(funcVal.IsNumber());
             Assert.False(funcVal.IsNativeFunction());
 
-            var nativeFuncVal = Values.NativeFunction(args => Values.Bool(true));
+            var nativeFuncVal = Values.NativeFunction(args => Values.Bool(true), 0);
             Assert.False(nativeFuncVal.IsBool());
             Assert.False(nativeFuncVal.IsString());
             Assert.False(nativeFuncVal.IsNumber());
@@ -112,7 +112,8 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Equal(func, Values.Function(func).AsFunction());
 
             static Value nativeFunc(Value[] args) => Values.Bool(true);
-            Assert.Equal(nativeFunc, Values.NativeFunction(nativeFunc).AsNativeFunction());
+            var nativeFuncDef = new Values.NativeFuncDefinition(nativeFunc, 0);
+            Assert.Equal(nativeFuncDef, Values.NativeFunction(nativeFunc, 0).AsNativeFunction());
         }
 
         [Fact]
@@ -131,9 +132,9 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsString());
             Assert.Throws<RuntimeValueTypeException>(() => Values.Function(new Function("func", 1)).AsNumber());
 
-            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsBool());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsString());
-            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true)).AsNumber());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true), 0).AsBool());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true), 0).AsString());
+            Assert.Throws<RuntimeValueTypeException>(() => Values.NativeFunction(args => Values.Bool(true), 0).AsNumber());
         }
 
         [Fact]
@@ -178,13 +179,13 @@ namespace SpeedCalc.Tests.Core.Runtime
             static Value nativeFunc2(Value[] args) => Values.Bool(false);
 
 
-            var val1 = Values.NativeFunction(nativeFunc1);
-            var val2 = Values.NativeFunction(nativeFunc2);
+            var val1 = Values.NativeFunction(nativeFunc1, 0);
+            var val2 = Values.NativeFunction(nativeFunc2, 0);
             var val1Ref = val1;
 
             Assert.Equal(val1, val1);
             Assert.Equal(val1, val1Ref);
-            Assert.Equal(val1, Values.NativeFunction(nativeFunc1));
+            Assert.Equal(val1, Values.NativeFunction(nativeFunc1, 0));
             Assert.NotEqual(val1, val2);
         }
 
@@ -194,7 +195,7 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.NotEqual(Values.Bool(true), Values.String(""));
             Assert.NotEqual(Values.Bool(true), Values.Number(0m));
             Assert.NotEqual(Values.Bool(true), Values.Function(new Function("test", 0)));
-            Assert.NotEqual(Values.Bool(true), Values.NativeFunction(args => Values.Bool(true)));
+            Assert.NotEqual(Values.Bool(true), Values.NativeFunction(args => Values.Bool(true), 0));
         }
     }
 }

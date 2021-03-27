@@ -34,6 +34,38 @@ namespace SpeedCalc.Core.Runtime
     {
         public delegate Value NativeFuncDelegate(Value[] parameters);
 
+        public sealed class NativeFuncDefinition : IEquatable<NativeFuncDefinition>
+        {
+            public int Arity { get; }
+
+            public NativeFuncDelegate Delegate { get; }
+
+            public override int GetHashCode() => new { Arity, Delegate }.GetHashCode();
+
+            public override bool Equals(object obj)
+            {
+                return obj switch
+                {
+                    NativeFuncDefinition d => Equals(d),
+                    _ => false,
+                };
+            }
+
+            public bool Equals(NativeFuncDefinition other)
+            {
+                if (other is null)
+                    return false;
+                return Arity == other.Arity
+                    && Delegate.Equals(other.Delegate);
+            }
+
+            public NativeFuncDefinition(NativeFuncDelegate nativeFuncDelegate, int arity)
+            {
+                Delegate = nativeFuncDelegate;
+                Arity = arity;
+            }
+        }
+
         #region Value Subtypes
 
         sealed class BoolVal : Value
@@ -82,13 +114,13 @@ namespace SpeedCalc.Core.Runtime
 
         sealed class NativeFunctionVal : Value
         {
-            public NativeFuncDelegate Value { get; }
+            public NativeFuncDefinition Value { get; }
 
             [DebuggerStepThrough]
             public override int GetHashCode() => Value.GetHashCode();
 
             [DebuggerStepThrough]
-            public NativeFunctionVal(NativeFuncDelegate value) => Value = value ?? throw new ArgumentNullException();
+            public NativeFunctionVal(NativeFuncDefinition value) => Value = value ?? throw new ArgumentNullException();
         }
 
         #endregion
@@ -114,7 +146,7 @@ namespace SpeedCalc.Core.Runtime
 
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Value NativeFunction(NativeFuncDelegate value) => new NativeFunctionVal(value);
+        public static Value NativeFunction(NativeFuncDelegate value, int arity) => new NativeFunctionVal(new NativeFuncDefinition(value, arity));
 
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -178,7 +210,7 @@ namespace SpeedCalc.Core.Runtime
 
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeFuncDelegate AsNativeFunction(this Value value)
+        public static NativeFuncDefinition AsNativeFunction(this Value value)
         {
             if ((value ?? throw new ArgumentNullException(nameof(value))) is NativeFunctionVal val)
                 return val.Value;
@@ -228,7 +260,7 @@ namespace SpeedCalc.Core.Runtime
                 NumberVal _ => value.AsNumber().ToString("G", CultureInfo.InvariantCulture),
                 StringVal val => val.Value,
                 FunctionVal val => val.AsFunction().ToString(),
-                NativeFunctionVal val => $"<native {val.AsNativeFunction().Method.Name}>",
+                NativeFunctionVal val => $"<native {val.AsNativeFunction().Delegate.Method.Name}>",
 
                 _ => throw new RuntimeException($"Unknown value type received: '{value.GetType()}'"),
             };

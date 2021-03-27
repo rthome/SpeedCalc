@@ -817,5 +817,20 @@ namespace SpeedCalc.Tests.Core.Runtime
             Assert.True(decimal.TryParse(randomOutput, out _));
             Assert.True(decimal.TryParse(clockOutput, out _));
         }
+
+        [Fact]
+        public void NativeCallsCheckArity()
+        {
+            RuntimeErrors("print random(1);");
+
+            var vm = new VirtualMachine();
+
+            static Value testFun(Value[] _) => Values.Bool(true);
+            vm.DefineNativeFunction("test", 1, testFun);
+
+            Assert.Equal(InterpretResult.RuntimeError, vm.Interpret("print test();"));
+            Assert.Equal(InterpretResult.RuntimeError, vm.Interpret("print test(1,2);"));
+            Assert.Equal(InterpretResult.Success, vm.Interpret("print test(1);"));
+        }
     }
 }
