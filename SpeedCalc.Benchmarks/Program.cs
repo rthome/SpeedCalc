@@ -164,6 +164,15 @@ namespace SpeedCalc.Benchmarks
 
                 Console.WriteLine($"| {result.Benchmark.Category.PadRight(maxCategoryLength)} | {result.Benchmark.Name.PadRight(maxNameLength)} | {FormatNumber(durationMs, durationColumnSize, "ms")} | {PadCenter(instrs.ToString(), instructionsColumnSize)} | {FormatNumber(instrPerMs, instrPerMsColumnSize)} |");
             }
+
+            var totalDuration = results.Select(r => r.Durations.Average(d => d.TotalMilliseconds)).Sum().ToString("F1", CultureInfo.InvariantCulture);
+            var totalInstrs = results.Select(r => (long)r.InstructionCounts.Average()).Sum().ToString(CultureInfo.InvariantCulture); ;
+            var totalAvgInstrPerMs = results.Select(r => r.InstructionCounts.Average() / r.Durations.Average(d => d.TotalMilliseconds)).Average().ToString("F1", CultureInfo.InvariantCulture); ;
+
+            Console.WriteLine("Total");
+            Console.WriteLine($"  Duration:     {totalDuration}ms");
+            Console.WriteLine($"  Instructions: {totalInstrs}");
+            Console.WriteLine($"  Instrs/ms:    {totalAvgInstrPerMs}");
         }
 
         static void Main()
